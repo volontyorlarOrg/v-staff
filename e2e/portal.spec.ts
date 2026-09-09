@@ -31,6 +31,10 @@ function formMessage(page: Page) {
   return page.locator('[data-slot="form-message"]');
 }
 
+function statePanel(page: Page) {
+  return page.locator('[data-slot="state-panel"]');
+}
+
 function fieldError(page: Page) {
   return page.locator('[data-slot="field-error"]');
 }
@@ -160,6 +164,36 @@ test.describe("the session", () => {
     await page.goto("/en/dashboard");
     await expect(page).toHaveURL(/\/en\/login/);
     await expect(formMessage(page)).toContainText("session");
+  });
+
+  test("keeps rotating the session when a guest page redirects a signed-in coordinator", async ({
+    page,
+  }) => {
+    await signedIn(page);
+    const before = await sessionCookie(page);
+
+    await page.goto("/en/login");
+    await expect(page).toHaveURL(/\/en\/dashboard$/);
+
+    const after = await sessionCookie(page);
+    expect(after?.value).not.toBe(before?.value);
+
+    await page.goto("/en/vacancies");
+    await expect(page).toHaveURL(/\/en\/vacancies$/);
+  });
+
+  test("keeps rotating the session while a required password change redirects", async ({
+    page,
+  }) => {
+    await signIn(page, TEMPORARY_COORDINATOR);
+    await expect(page).toHaveURL(/\/en\/account\/change-password$/);
+    const before = await sessionCookie(page);
+
+    await page.goto("/en/vacancies");
+    await expect(page).toHaveURL(/\/en\/account\/change-password$/);
+
+    const after = await sessionCookie(page);
+    expect(after?.value).not.toBe(before?.value);
   });
 
   test("signs out and clears the cookie", async ({ page }) => {
@@ -536,5 +570,61 @@ test.describe("other coordinators", () => {
     await page.goto("/en/vacancies");
     await expect(page.getByRole("row", { name: /City sports day/ })).toHaveCount(1);
     await expect(page.getByRole("row", { name: /Winter book drive/ })).toHaveCount(0);
+  });
+});
+
+test.describe("failures a screen has to explain", () => {
+  test("routes a coordinator to the password page once the API requires a change", async ({
+    page,
+  }) => {
+    await signedIn(page);
+    await page.request.post(`${STUB}/__stub/require-password-change`, {
+      data: { email: COORDINATOR },
+    });
+
+    await page.goto("/en/vacancies");
+
+    await expect(page).toHaveURL(/\/en\/account\/change-password$/);
+  });
+
+  test("explains a required password change the session has not learned about yet", async ({
+    page,
+  }) => {
+    await signedIn(page);
+    await page.request.post(`${STUB}/__stub/break`, {
+      data: {
+        path: "/staff/opportunities",
+        status: 403,
+        code: "passwordChangeRequired",
+      },
+    });
+
+    await page.goto("/en/vacancies");
+
+    await expect(statePanel(page)).toContainText("Change your password first");
+    await expect(page.getByRole("link", { name: "Change password" })).toBeVisible();
+
+    await page.request.post(`${STUB}/__stub/break`, { data: { path: null } });
+  });
+
+  test("explains a backend failure with its own code, not a blank panel", async ({
+    page,
+  }) => {
+    await signedIn(page);
+    await page.request.post(`${STUB}/__stub/break`, {
+      data: {
+        path: "/staff/statistics",
+        status: 503,
+        code: "adminWorkflowsDisabled",
+      },
+    });
+
+    await page.goto("/en/dashboard");
+
+    await expect(statePanel(page)).toContainText(
+      "The API has these workflows switched off",
+    );
+
+    await page.request.post(`${STUB}/__stub/break`, { data: { path: null } });
   });
 });
