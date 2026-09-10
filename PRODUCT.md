@@ -19,8 +19,7 @@ decides who is accepted, and confirms who turned up. One coordinator, their own
 vacancies, and the volunteers who applied to them.
 
 Coordinators do not sign themselves up. An administrator creates the account in
-`v-admin` with a temporary password, and the coordinator must change it before
-the portal will do anything else.
+`v-admin` with a permanent password that the coordinator can keep using.
 
 ## The four repositories
 
@@ -79,4 +78,4 @@ three and the language is carried by the URL.
 
 - The production origin of this portal.
 - Whether coordinators are ever scoped by region as well as by ownership.
-- How a coordinator is told their temporary password, today, in practice.
+- How a coordinator is told their initial password, today, in practice.
