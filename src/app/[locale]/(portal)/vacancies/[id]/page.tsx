@@ -101,21 +101,24 @@ export default async function VacancyPage({
       ? organizations.data.find((item) => item.id === vacancy.organizationId)
       : undefined);
 
-  const missing = missingForApproval({
-    title: vacancy.title,
-    summary: vacancy.summary,
-    description: vacancy.description,
-    format: vacancy.format,
-    region: vacancy.region,
-    city: vacancy.city,
-    locationName: vacancy.locationName,
-    startsAt: vacancy.startsAt,
-    endsAt: vacancy.endsAt,
-    applicationDeadline: vacancy.applicationDeadline,
-    capacity: vacancy.capacity,
-    estimatedTotalHours: vacancy.estimatedTotalHours,
-    ...(organization ? { organization: { verified: organization.verified } } : {}),
-  }, now);
+  const missing = missingForApproval(
+    {
+      title: vacancy.title,
+      summary: vacancy.summary,
+      description: vacancy.description,
+      format: vacancy.format,
+      region: vacancy.region,
+      city: vacancy.city,
+      locationName: vacancy.locationName,
+      startsAt: vacancy.startsAt,
+      endsAt: vacancy.endsAt,
+      applicationDeadline: vacancy.applicationDeadline,
+      capacity: vacancy.capacity,
+      estimatedTotalHours: vacancy.estimatedTotalHours,
+      ...(organization ? { organization: { verified: organization.verified } } : {}),
+    },
+    now,
+  );
 
   const submittable = canSubmitForApproval(vacancy);
   const confirmErrors = await errorCatalog();
@@ -125,6 +128,7 @@ export default async function VacancyPage({
     t("form.updated"),
   );
 
+  const applicationsFailure = failureOf(applications);
   const rows = isReady(applications) ? applications.data : [];
   const accepted = rows.filter((application) => application.status === "accepted");
   const attendanceOpen = isAttendanceOpen(vacancy, now);
@@ -407,7 +411,9 @@ export default async function VacancyPage({
         title={attendanceCopy("roster.title")}
         description={attendanceCopy("roster.description")}
       >
-        {accepted.length === 0 ? (
+        {applicationsFailure ? (
+          <LoadFailure failure={applicationsFailure} />
+        ) : accepted.length === 0 ? (
           <p className="text-sm text-ink-muted">
             {attendanceCopy("roster.noAccepted")}
           </p>
@@ -466,7 +472,9 @@ export default async function VacancyPage({
       </Panel>
 
       <Panel title={t("detail.applications")}>
-        {rows.length === 0 ? (
+        {applicationsFailure ? (
+          <LoadFailure failure={applicationsFailure} />
+        ) : rows.length === 0 ? (
           <p className="text-sm text-ink-muted">{t("detail.noApplications")}</p>
         ) : (
           <ul className="flex flex-col divide-y divide-border">
