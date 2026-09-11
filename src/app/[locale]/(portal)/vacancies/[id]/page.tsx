@@ -2,13 +2,17 @@ import { getFormatter, getTranslations, setRequestLocale } from "next-intl/serve
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
+import {
+  AttendanceRoster,
+  type RosterRow,
+} from "@/components/attendance/attendance-roster";
 import { ConfirmAction } from "@/components/forms/confirm-action";
 import { DefinitionList } from "@/components/portal/definition-list";
 import { Panel } from "@/components/portal/panel";
 import {
   StatusBadge,
   applicationStatusTone,
-  vacancyStageTone,
+  vacancyStateTone,
 } from "@/components/portal/status-badge";
 import { LoadFailure } from "@/components/states/load-failure";
 import { PageHeader } from "@/components/states/page-header";
@@ -18,19 +22,25 @@ import { buttonClass } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import { failureOf, isReady } from "@/lib/api/load";
 import { loadApplications } from "@/lib/applications/data.server";
-import { volunteerNameOf } from "@/lib/applications/filters";
+import { isAttendanceResolved, volunteerNameOf } from "@/lib/applications/filters";
 import {
   REGIONS,
+  RESOLVABLE_ATTENDANCE_OUTCOMES,
   VACANCY_FORMATS,
   canArchive,
-  canEdit,
-  canPublish,
-  stageOf,
 } from "@/lib/domain/vocabulary";
 import { applicationHref } from "@/lib/routing/routes";
 import {
+  attendanceOpensAt,
+  canEditVacancy,
+  canSubmitForApproval,
+  isAttendanceOpen,
+  missingForApproval,
+  vacancyStateOf,
+} from "@/lib/vacancies/approval";
+import {
   archiveVacancyAction,
-  publishVacancyAction,
+  submitVacancyForApprovalAction,
   updateVacancyAction,
 } from "@/lib/vacancies/actions";
 import { loadOrganizations, loadVacancy } from "@/lib/vacancies/data.server";
@@ -55,6 +65,7 @@ export default async function VacancyPage({
   setRequestLocale(locale);
 
   const t = await getTranslations("vacancies");
+  const attendanceCopy = await getTranslations("attendance");
   const applicationsCopy = await getTranslations("applications");
   const vocabulary = await getTranslations("vocabulary");
   const common = await getTranslations("common");
@@ -76,13 +87,37 @@ export default async function VacancyPage({
   if (!isReady(loaded)) notFound();
 
   const vacancy = loaded.data;
+  const now = new Date();
+  const state = vacancyStateOf(vacancy);
 
-  const stage = stageOf(vacancy);
   const [organizations, applications] = await Promise.all([
     loadOrganizations(),
     loadApplications({ vacancyId: vacancy.id }),
   ]);
 
+  const organization =
+    vacancy.organization ??
+    (isReady(organizations)
+      ? organizations.data.find((item) => item.id === vacancy.organizationId)
+      : undefined);
+
+  const missing = missingForApproval({
+    title: vacancy.title,
+    summary: vacancy.summary,
+    description: vacancy.description,
+    format: vacancy.format,
+    region: vacancy.region,
+    city: vacancy.city,
+    locationName: vacancy.locationName,
+    startsAt: vacancy.startsAt,
+    endsAt: vacancy.endsAt,
+    applicationDeadline: vacancy.applicationDeadline,
+    capacity: vacancy.capacity,
+    estimatedTotalHours: vacancy.estimatedTotalHours,
+    ...(organization ? { organization: { verified: organization.verified } } : {}),
+  }, now);
+
+  const submittable = canSubmitForApproval(vacancy);
   const confirmErrors = await errorCatalog();
   const labels = await vacancyFormLabels(
     t("form.submitUpdate"),
@@ -91,6 +126,72 @@ export default async function VacancyPage({
   );
 
   const rows = isReady(applications) ? applications.data : [];
+  const accepted = rows.filter((application) => application.status === "accepted");
+  const attendanceOpen = isAttendanceOpen(vacancy, now);
+  const opensAt = attendanceOpensAt(vacancy);
+
+  const outcomeLabels = Object.fromEntries(
+    RESOLVABLE_ATTENDANCE_OUTCOMES.map((outcome) => [
+      outcome,
+      attendanceCopy(`outcome.${outcome}`),
+    ]),
+  );
+
+  const attendanceErrors = await errorCatalog([
+    "server",
+    "network",
+    "timeout",
+    "rateLimited",
+    "unavailable",
+    "forbidden",
+    "notFound",
+    "conflict",
+    "validationFailed",
+    "awaitingContract",
+    "sessionExpired",
+    "required",
+    "hours",
+    "confirmedHoursRequired",
+    "attendanceNotFound",
+    "attendanceNotOpen",
+    "attendanceOutcomeNotResolved",
+    "attendanceBatchFailed",
+    "noVolunteersSelected",
+    "tooManyVolunteers",
+    "applicationNotAccepted",
+    "adminWorkflowsDisabled",
+  ]);
+
+  const rosterRows: RosterRow[] = accepted.map((application) => {
+    const attendance = application.attendance;
+    const detail = [
+      attendance?.resolvedAt
+        ? attendanceCopy("resolved", {
+            when: format.dateTime(new Date(attendance.resolvedAt), "date"),
+          })
+        : null,
+      attendance?.confirmedHours === undefined
+        ? null
+        : `${attendanceCopy("table.hours")}: ${format.number(attendance.confirmedHours)}`,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+
+    return {
+      applicationId: application.id,
+      name: volunteerNameOf(application) || application.volunteerId,
+      outcome: attendance?.outcome ?? "awaiting_confirmation",
+      outcomeLabel: attendance
+        ? attendanceCopy(`outcome.${attendance.outcome}`)
+        : attendanceCopy("outcome.unknown"),
+      resolved: isAttendanceResolved(application),
+      detail,
+      hours:
+        attendance?.confirmedHours === undefined
+          ? ""
+          : String(attendance.confirmedHours),
+    };
+  });
 
   return (
     <>
@@ -100,17 +201,17 @@ export default async function VacancyPage({
         description={vacancy.summary}
         actions={
           <>
-            {canPublish(vacancy) ? (
+            {submittable && missing.length === 0 ? (
               <ConfirmAction
-                action={publishVacancyAction}
+                action={submitVacancyForApprovalAction}
                 fields={{ id: vacancy.id }}
                 labels={{
-                  trigger: t("publish.trigger"),
-                  title: t("publish.title"),
-                  description: t("publish.description"),
-                  confirm: t("publish.confirm"),
+                  trigger: t("submit.trigger"),
+                  title: t("submit.title"),
+                  description: t("submit.description"),
+                  confirm: t("submit.confirm"),
                   cancel: common("cancel"),
-                  pending: t("publish.pending"),
+                  pending: t("submit.pending"),
                   fallbackError: errors("server"),
                   errors: confirmErrors,
                 }}
@@ -138,15 +239,85 @@ export default async function VacancyPage({
       />
 
       <div className="flex flex-wrap items-center gap-2">
-        <StatusBadge label={t(`stage.${stage}`)} tone={vacancyStageTone(stage)} />
-        {vacancy.organization ? (
-          <span className="text-sm text-ink-muted">{vacancy.organization.name}</span>
+        <StatusBadge label={t(`state.${state}`)} tone={vacancyStateTone(state)} />
+        {organization ? (
+          <span className="text-sm text-ink-muted">{organization.name}</span>
         ) : null}
       </div>
 
-      {stage === "archived" ? (
+      {state === "pending_review" ? (
+        <StatePanel
+          role="status"
+          tone="notice"
+          title={t("approval.pendingTitle")}
+          description={t("approval.pendingDescription")}
+        />
+      ) : null}
+
+      {state === "changes_requested" ? (
+        <StatePanel
+          role="status"
+          tone="notice"
+          title={t("approval.changesTitle")}
+          description={vacancy.approvalNote ?? t("approval.changesDescription")}
+        />
+      ) : null}
+
+      {state === "rejected" ? (
+        <StatePanel
+          role="status"
+          tone="danger"
+          title={t("approval.rejectedTitle")}
+          description={vacancy.approvalNote ?? t("approval.rejectedDescription")}
+        />
+      ) : null}
+
+      {state === "archived" ? (
         <StatePanel role="status" title={t("archivedNotice")} />
       ) : null}
+
+      {submittable && missing.length > 0 ? (
+        <StatePanel
+          role="status"
+          tone="notice"
+          title={t("approval.missingTitle")}
+          description={`${t("approval.missingDescription")} ${missing
+            .map((requirement) => t(`approval.requirements.${requirement}`))
+            .join(", ")}`}
+        />
+      ) : null}
+
+      <Panel title={t("approval.title")} description={t("approval.description")}>
+        <DefinitionList
+          items={[
+            { term: t("approval.status"), value: t(`state.${state}`) },
+            {
+              term: t("approval.submitted"),
+              value: vacancy.approvalSubmittedAt
+                ? format.dateTime(new Date(vacancy.approvalSubmittedAt), "stamp")
+                : t("approval.notSubmitted"),
+            },
+            {
+              term: t("approval.decided"),
+              value: vacancy.approvalReviewedAt
+                ? format.dateTime(new Date(vacancy.approvalReviewedAt), "stamp")
+                : common("notSet"),
+            },
+            {
+              term: t("approval.reviewer"),
+              value:
+                vacancy.approvalReviewedBy?.displayName ??
+                vacancy.approvalReviewedBy?.id ??
+                vacancy.approvalReviewedById ??
+                common("notSet"),
+            },
+            {
+              term: t("approval.note"),
+              value: vacancy.approvalNote ?? t("approval.noNote"),
+            },
+          ]}
+        />
+      </Panel>
 
       <Panel title={t("detail.details")}>
         <DefinitionList
@@ -186,6 +357,13 @@ export default async function VacancyPage({
                   ? common("none")
                   : format.number(vacancy.capacity),
             },
+            {
+              term: t("fields.estimatedTotalHours"),
+              value:
+                vacancy.estimatedTotalHours === undefined
+                  ? common("notSet")
+                  : format.number(vacancy.estimatedTotalHours),
+            },
           ]}
         />
       </Panel>
@@ -206,10 +384,8 @@ export default async function VacancyPage({
         ) : null}
       </Panel>
 
-      <Panel title={t("detail.questions")}>
-        {vacancy.questions.length === 0 ? (
-          <p className="text-sm text-ink-muted">{t("detail.noQuestions")}</p>
-        ) : (
+      {vacancy.questions.length > 0 ? (
+        <Panel title={t("detail.questions")} description={t("detail.questionsLegacy")}>
           <ol className="flex flex-col gap-3">
             {[...vacancy.questions]
               .sort((a, b) => a.position - b.position)
@@ -224,6 +400,68 @@ export default async function VacancyPage({
                 </li>
               ))}
           </ol>
+        </Panel>
+      ) : null}
+
+      <Panel
+        title={attendanceCopy("roster.title")}
+        description={attendanceCopy("roster.description")}
+      >
+        {accepted.length === 0 ? (
+          <p className="text-sm text-ink-muted">
+            {attendanceCopy("roster.noAccepted")}
+          </p>
+        ) : !attendanceOpen ? (
+          <StatePanel
+            role="status"
+            title={attendanceCopy("roster.closedTitle")}
+            description={
+              opensAt
+                ? attendanceCopy("roster.closedDescription", {
+                    when: format.dateTime(opensAt, "stamp"),
+                  })
+                : attendanceCopy("roster.closedUnknown")
+            }
+          />
+        ) : (
+          <AttendanceRoster
+            vacancyId={vacancy.id}
+            rows={rosterRows}
+            outcomes={RESOLVABLE_ATTENDANCE_OUTCOMES}
+            labels={{
+              caption: attendanceCopy("roster.caption"),
+              volunteer: attendanceCopy("table.volunteer"),
+              state: attendanceCopy("table.outcome"),
+              select: attendanceCopy("roster.select"),
+              selectAll: attendanceCopy("roster.selectAll"),
+              selected: Array.from({ length: rosterRows.length + 1 }, (_item, count) =>
+                attendanceCopy("roster.selected", { count }),
+              ),
+              correct: attendanceCopy("roster.correct"),
+              batchTitle: attendanceCopy("roster.batchTitle"),
+              batchHelp: attendanceCopy("roster.batchHelp"),
+              outcome: attendanceCopy("roster.outcome"),
+              outcomes: outcomeLabels,
+              hours: attendanceCopy("roster.hours"),
+              hoursHelp: attendanceCopy("resolve.hoursHelp"),
+              submit: attendanceCopy("roster.submit"),
+              pending: attendanceCopy("roster.pending"),
+              success: attendanceCopy("roster.success"),
+              fallbackError: errors("server"),
+              errors: attendanceErrors,
+              row: {
+                outcome: attendanceCopy("resolve.outcome"),
+                outcomes: outcomeLabels,
+                hours: attendanceCopy("resolve.hours"),
+                hoursHelp: attendanceCopy("resolve.hoursHelp"),
+                submit: attendanceCopy("resolve.confirm"),
+                pending: attendanceCopy("resolve.pending"),
+                success: attendanceCopy("resolve.success"),
+                fallbackError: errors("server"),
+                errors: attendanceErrors,
+              },
+            }}
+          />
         )}
       </Panel>
 
@@ -258,7 +496,7 @@ export default async function VacancyPage({
         )}
       </Panel>
 
-      {canEdit(vacancy) && isReady(organizations) ? (
+      {canEditVacancy(vacancy) && isReady(organizations) ? (
         <Panel title={t("form.editTitle")}>
           <VacancyForm
             action={updateVacancyAction}
@@ -278,6 +516,10 @@ export default async function VacancyPage({
               endsAt: toDateTimeLocal(vacancy.endsAt),
               applicationDeadline: toDateTimeLocal(vacancy.applicationDeadline),
               capacity: vacancy.capacity === undefined ? "" : String(vacancy.capacity),
+              estimatedTotalHours:
+                vacancy.estimatedTotalHours === undefined
+                  ? ""
+                  : String(vacancy.estimatedTotalHours),
               requirements: vacancy.requirements.join("\n"),
             }}
             organizations={organizations.data.map((organization) => ({
