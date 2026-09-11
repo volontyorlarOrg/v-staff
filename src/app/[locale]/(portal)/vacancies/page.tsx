@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/states/empty-state";
 import { LoadFailure } from "@/components/states/load-failure";
 import { PageHeader } from "@/components/states/page-header";
 import { Pagination } from "@/components/states/pagination";
+import { VacancyDialog } from "@/components/vacancies/vacancy-dialog";
 import { buttonClass } from "@/components/ui/button";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import {
@@ -20,7 +21,7 @@ import {
 } from "@/components/ui/table";
 import { Link } from "@/i18n/navigation";
 import { failureOf, isReady } from "@/lib/api/load";
-import { VACANCY_STATES } from "@/lib/domain/vocabulary";
+import { REGIONS, VACANCY_FORMATS, VACANCY_STATES } from "@/lib/domain/vocabulary";
 import { vacancyStateOf } from "@/lib/vacancies/approval";
 import { navHref, vacancyHref } from "@/lib/routing/routes";
 import {
@@ -31,8 +32,10 @@ import {
   readPage,
   readParam,
 } from "@/lib/routing/search-params";
-import { loadVacancies } from "@/lib/vacancies/data.server";
+import { createVacancyAction } from "@/lib/vacancies/actions";
+import { loadOrganizations, loadVacancies } from "@/lib/vacancies/data.server";
 import { filterVacancies } from "@/lib/vacancies/filters";
+import { vacancyDialogLabels } from "@/lib/vacancies/labels.server";
 
 export const dynamic = "force-dynamic";
 
@@ -60,11 +63,22 @@ export default async function VacanciesPage({
   const state = readOption(query, "state", VACANCY_STATES);
   const page = readPage(query);
 
-  const loaded = await loadVacancies();
+  const [loaded, organizations] = await Promise.all([
+    loadVacancies(),
+    loadOrganizations(),
+  ]);
+
   const failure = failureOf(loaded);
+  const all = isReady(loaded) ? loaded.data : [];
   const filtered = isReady(loaded) ? filterVacancies(loaded.data, { q, state }) : [];
   const pageState = paginate(filtered, page, DEFAULT_PAGE_SIZE);
   const listPath = navHref("vacancies");
+
+  const returned = all.filter(
+    (vacancy) => vacancyStateOf(vacancy) === "changes_requested",
+  ).length;
+
+  const createLabels = await vacancyDialogLabels("create");
 
   return (
     <>
@@ -72,9 +86,24 @@ export default async function VacanciesPage({
         title={t("title")}
         description={t("description")}
         actions={
-          <Link href={navHref("newVacancy")} className={buttonClass({ size: "sm" })}>
-            {t("new")}
-          </Link>
+          <VacancyDialog
+            action={createVacancyAction}
+            labels={createLabels}
+            defaults={{}}
+            organizations={
+              isReady(organizations)
+                ? organizations.data.map((organization) => ({
+                    id: organization.id,
+                    name: organization.name,
+                    verified: organization.verified,
+                  }))
+                : []
+            }
+            regions={REGIONS}
+            formats={VACANCY_FORMATS}
+            triggerLabel={t("new")}
+            triggerHref={`/${locale}${navHref("newVacancy")}`}
+          />
         }
       />
 
@@ -82,6 +111,18 @@ export default async function VacanciesPage({
 
       {isReady(loaded) ? (
         <>
+          {returned > 0 && state !== "changes_requested" ? (
+            <Link
+              href={hrefWith(listPath, { state: "changes_requested" })}
+              className="flex items-center justify-between gap-4 rounded-xl border border-primary-muted bg-surface-soft px-5 py-4 text-sm font-medium text-ink transition-colors hover:border-primary-ink"
+            >
+              <span>{t("state.changes_requested")}</span>
+              <span className="tabular text-section font-semibold text-primary-ink">
+                {format.number(returned)}
+              </span>
+            </Link>
+          ) : null}
+
           <FilterForm
             action={`/${locale}${listPath}`}
             legend={t("filters.legend")}
@@ -103,16 +144,14 @@ export default async function VacanciesPage({
 
           {pageState.items.length === 0 ? (
             <EmptyState
-              title={loaded.data.length === 0 ? t("empty.title") : t("noMatches.title")}
+              title={all.length === 0 ? t("empty.title") : t("noMatches.title")}
               description={
-                loaded.data.length === 0
-                  ? t("empty.description")
-                  : t("noMatches.description")
+                all.length === 0 ? t("empty.description") : t("noMatches.description")
               }
             />
           ) : (
             <>
-              <div className="rounded-xl border border-border bg-card">
+              <div className="rounded-xl border border-border/70 panel-surface">
                 <Table>
                   <TableCaption className="sr-only">{t("table.caption")}</TableCaption>
                   <TableHeader>

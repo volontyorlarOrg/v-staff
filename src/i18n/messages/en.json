@@ -32,7 +32,9 @@
     "all": "All",
     "yes": "Yes",
     "no": "No",
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "close": "Close",
+    "fixFields": "Check these fields"
   },
   "nav": {
     "label": "Portal sections",
@@ -219,15 +221,6 @@
       "rejected": "Rejected",
       "archived": "Archived"
     },
-    "state": {
-      "all": "Every state",
-      "draft": "Draft",
-      "pending_review": "Waiting for approval",
-      "changes_requested": "Changes requested",
-      "approved": "Approved and published",
-      "rejected": "Rejected",
-      "archived": "Archived"
-    },
     "table": {
       "caption": "Vacancies you created",
       "title": "Vacancy",
@@ -282,14 +275,25 @@
       "pending": "Saving…",
       "created": "The draft was created.",
       "updated": "The changes were saved.",
-      "noOrganizations": "No organization is available yet, so a vacancy cannot be created. Ask an administrator to add one."
+      "noOrganizations": "No organization is available yet, so a vacancy cannot be created. Ask an administrator to add one.",
+      "sections": {
+        "about": "The vacancy",
+        "organization": "Organization",
+        "place": "Where it happens",
+        "when": "When it happens",
+        "volunteers": "Volunteers"
+      },
+      "unverified": "not verified",
+      "unverifiedNotice": "This organization is not verified yet. A vacancy under it cannot be approved until an administrator verifies it.",
+      "editDescription": "Changes stay a draft until you send the vacancy for approval again."
     },
     "archive": {
       "trigger": "Archive",
       "title": "Archive this vacancy?",
       "description": "It stops accepting applications and disappears from the public list. This cannot be undone from here.",
       "confirm": "Archive",
-      "pending": "Archiving…"
+      "pending": "Archiving…",
+      "success": "The vacancy was archived."
     },
     "archivedNotice": "This vacancy is archived. It can no longer be edited.",
     "submit": {
@@ -297,7 +301,8 @@
       "title": "Send this vacancy for approval?",
       "description": "An administrator decides whether it is published. You cannot edit it while they are looking at it.",
       "confirm": "Send",
-      "pending": "Sending…"
+      "pending": "Sending…",
+      "success": "The vacancy was sent for approval."
     },
     "approval": {
       "title": "Approval",
@@ -330,7 +335,10 @@
         "capacity": "how many places",
         "estimatedTotalHours": "the estimated hours",
         "location": "where it happens"
-      }
+      },
+      "readyTitle": "Ready for volunteers",
+      "readyBlocked": "This vacancy is not ready yet",
+      "readyLine": "Everything approval needs is in place."
     }
   },
   "applications": {

@@ -12,7 +12,9 @@ export function Figure({
   className?: string;
 }) {
   return (
-    <div className={cn("rounded-xl border border-border bg-card p-5", className)}>
+    <div
+      className={cn("rounded-xl border border-border/70 panel-surface p-5", className)}
+    >
       <p className="eyebrow text-ink-muted">{label}</p>
       <p
         className={cn(
@@ -28,4 +30,13 @@ export function Figure({
 
 export function FigureGrid({ children }: { children: React.ReactNode }) {
   return <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{children}</div>;
+}
+
+export function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0">
+      <dt className="eyebrow text-ink-muted">{label}</dt>
+      <dd className="tabular mt-1.5 text-section font-semibold text-ink">{value}</dd>
+    </div>
+  );
 }
