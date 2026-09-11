@@ -219,6 +219,15 @@
       "rejected": "Rejected",
       "archived": "Archived"
     },
+    "state": {
+      "all": "Every state",
+      "draft": "Draft",
+      "pending_review": "Waiting for approval",
+      "changes_requested": "Changes requested",
+      "approved": "Approved and published",
+      "rejected": "Rejected",
+      "archived": "Archived"
+    },
     "table": {
       "caption": "Vacancies you created",
       "title": "Vacancy",
@@ -389,7 +398,9 @@
     },
     "snapshotFields": {
       "fullName": "Full name",
+      "bio": "Bio",
       "region": "Region",
+      "languages": "Languages",
       "school": "School",
       "phone": "Phone",
       "telegram": "Telegram"

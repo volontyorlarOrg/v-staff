@@ -219,6 +219,15 @@
       "rejected": "Отклонена",
       "archived": "В архиве"
     },
+    "state": {
+      "all": "Любое состояние",
+      "draft": "Черновик",
+      "pending_review": "Ожидает утверждения",
+      "changes_requested": "Нужны правки",
+      "approved": "Утверждена и опубликована",
+      "rejected": "Отклонена",
+      "archived": "В архиве"
+    },
     "table": {
       "caption": "Вакансии, созданные вами",
       "title": "Вакансия",
@@ -389,7 +398,9 @@
     },
     "snapshotFields": {
       "fullName": "Полное имя",
+      "bio": "О себе",
       "region": "Регион",
+      "languages": "Языки",
       "school": "Учебное заведение",
       "phone": "Телефон",
       "telegram": "Telegram"

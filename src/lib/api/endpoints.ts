@@ -43,7 +43,7 @@ export const endpoints = {
   submitVacancyForApproval: {
     method: "POST",
     path: "/staff/opportunities/{id}/submit-for-approval",
-    contract: "announced",
+    contract: "published",
   },
   archiveVacancy: {
     method: "POST",
@@ -71,7 +71,7 @@ export const endpoints = {
   resolveVacancyAttendance: {
     method: "PUT",
     path: "/staff/opportunities/{id}/attendance",
-    contract: "announced",
+    contract: "published",
   },
 
   users: { method: "GET", path: "/staff/users", contract: "published" },
