@@ -133,12 +133,14 @@ describe("missingForApproval", () => {
   });
 
   it("requires the deadline to fall before the vacancy starts", () => {
-    expect(
-      missingForApproval({
-        ...ready,
-        applicationDeadline: "2026-10-02T18:00:00.000Z",
-      }),
-    ).toContain("applicationDeadline");
+    for (const applicationDeadline of [
+      "2026-10-01T09:00:00.000Z",
+      "2026-10-02T18:00:00.000Z",
+    ]) {
+      expect(missingForApproval({ ...ready, applicationDeadline })).toContain(
+        "applicationDeadline",
+      );
+    }
   });
 
   it("requires a positive whole number of places", () => {

@@ -99,9 +99,9 @@ export function AttendanceRoster({
   return (
     <div className="flex flex-col gap-5">
       <div className="-mx-5 overflow-x-auto">
-        <Table>
+        <Table className="block sm:table">
           <TableCaption className="sr-only">{labels.caption}</TableCaption>
-          <TableHeader>
+          <TableHeader className="hidden sm:table-header-group">
             <TableRow>
               <TableHead scope="col" className="w-10">
                 <label className="flex min-h-11 items-center gap-2">
@@ -127,10 +127,13 @@ export function AttendanceRoster({
               </TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody className="block sm:table-row-group">
             {rows.map((row) => (
-              <TableRow key={row.applicationId}>
-                <TableCell>
+              <TableRow
+                key={row.applicationId}
+                className="grid grid-cols-[2.75rem_minmax(0,1fr)] py-3 sm:table-row sm:py-0"
+              >
+                <TableCell className="row-span-2 block py-0 pr-0 sm:table-cell sm:py-3 sm:pr-5">
                   <label className="flex min-h-11 items-center gap-2">
                     <input
                       type="checkbox"
@@ -148,10 +151,10 @@ export function AttendanceRoster({
                     </span>
                   </label>
                 </TableCell>
-                <TableCell>
+                <TableCell className="block py-1 pl-3 sm:table-cell sm:py-3 sm:pl-5">
                   <span className="font-medium text-ink">{row.name}</span>
                 </TableCell>
-                <TableCell>
+                <TableCell className="block pt-0 pb-2 pl-3 sm:table-cell sm:py-3 sm:pl-5">
                   <StatusBadge
                     label={row.outcomeLabel}
                     tone={attendanceTone(row.outcome)}
@@ -162,7 +165,7 @@ export function AttendanceRoster({
                     </span>
                   ) : null}
                 </TableCell>
-                <TableCell>
+                <TableCell className="col-span-2 block border-t border-border py-0 sm:table-cell sm:border-0 sm:py-3">
                   <details className="text-sm">
                     <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-ink-muted">
                       {labels.correct}
