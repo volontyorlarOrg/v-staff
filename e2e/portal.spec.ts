@@ -108,7 +108,7 @@ test.describe("sign-in", () => {
 });
 
 test.describe("the session", () => {
-  test("keeps both tokens out of the browser", async ({ page }) => {
+  test("keeps the session token out of the browser", async ({ page }) => {
     await signedIn(page);
 
     const cookie = await sessionCookie(page);
@@ -129,7 +129,9 @@ test.describe("the session", () => {
     expect(stored.session).toBe("{}");
   });
 
-  test("rotates the access token as the coordinator moves around", async ({ page }) => {
+  test("carries one unchanged session as the coordinator moves around", async ({
+    page,
+  }) => {
     await signedIn(page);
     const first = await sessionCookie(page);
 
@@ -137,8 +139,12 @@ test.describe("the session", () => {
     await expect(page).toHaveURL(/\/en\/vacancies$/);
 
     const second = await sessionCookie(page);
-    expect(second?.value).not.toBe(first?.value);
+    expect(second?.value).toBe(first?.value);
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Vacancies");
+
+    await page.goto("/en/applications");
+    await expect(page).toHaveURL(/\/en\/applications$/);
+    expect((await sessionCookie(page))?.value).toBe(first?.value);
   });
 
   test("sends an unauthenticated visitor to sign-in and remembers where they wanted to go", async ({
@@ -166,7 +172,7 @@ test.describe("the session", () => {
     await expect(formMessage(page)).toContainText("session");
   });
 
-  test("keeps rotating the session when a guest page redirects a signed-in coordinator", async ({
+  test("keeps the session when a guest page redirects a signed-in coordinator", async ({
     page,
   }) => {
     await signedIn(page);
@@ -176,13 +182,13 @@ test.describe("the session", () => {
     await expect(page).toHaveURL(/\/en\/dashboard$/);
 
     const after = await sessionCookie(page);
-    expect(after?.value).not.toBe(before?.value);
+    expect(after?.value).toBe(before?.value);
 
     await page.goto("/en/vacancies");
     await expect(page).toHaveURL(/\/en\/vacancies$/);
   });
 
-  test("keeps rotating the session while a required password change redirects", async ({
+  test("keeps the session while a required password change redirects", async ({
     page,
   }) => {
     await signIn(page, TEMPORARY_COORDINATOR);
@@ -193,7 +199,7 @@ test.describe("the session", () => {
     await expect(page).toHaveURL(/\/en\/account\/change-password$/);
 
     const after = await sessionCookie(page);
-    expect(after?.value).not.toBe(before?.value);
+    expect(after?.value).toBe(before?.value);
   });
 
   test("signs out and clears the cookie", async ({ page }) => {
@@ -574,7 +580,7 @@ test.describe("other coordinators", () => {
 });
 
 test.describe("failures a screen has to explain", () => {
-  test("routes a coordinator to the password page once the API requires a change", async ({
+  test("offers the password page once the API starts requiring a change", async ({
     page,
   }) => {
     await signedIn(page);
@@ -584,6 +590,8 @@ test.describe("failures a screen has to explain", () => {
 
     await page.goto("/en/vacancies");
 
+    await expect(statePanel(page)).toContainText("Change your password first");
+    await page.getByRole("link", { name: "Change password" }).click();
     await expect(page).toHaveURL(/\/en\/account\/change-password$/);
   });
 
