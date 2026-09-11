@@ -32,7 +32,9 @@
     "all": "Barchasi",
     "yes": "Ha",
     "no": "Yoʻq",
-    "loading": "Yuklanmoqda…"
+    "loading": "Yuklanmoqda…",
+    "close": "Yopish",
+    "fixFields": "Bu maydonlarni tekshiring"
   },
   "nav": {
     "label": "Portal boʻlimlari",
@@ -219,15 +221,6 @@
       "rejected": "Rad etilgan",
       "archived": "Arxivda"
     },
-    "state": {
-      "all": "Har qanday holat",
-      "draft": "Qoralama",
-      "pending_review": "Tasdiqlash kutilmoqda",
-      "changes_requested": "Oʻzgartirish soʻralgan",
-      "approved": "Tasdiqlangan va eʼlon qilingan",
-      "rejected": "Rad etilgan",
-      "archived": "Arxivda"
-    },
     "table": {
       "caption": "Siz yaratgan vakansiyalar",
       "title": "Vakansiya",
@@ -282,14 +275,25 @@
       "pending": "Saqlanmoqda…",
       "created": "Qoralama yaratildi.",
       "updated": "Oʻzgarishlar saqlandi.",
-      "noOrganizations": "Hali birorta tashkilot yoʻq, shuning uchun vakansiya yaratib boʻlmaydi. Administratordan tashkilot qoʻshishni soʻrang."
+      "noOrganizations": "Hali birorta tashkilot yoʻq, shuning uchun vakansiya yaratib boʻlmaydi. Administratordan tashkilot qoʻshishni soʻrang.",
+      "sections": {
+        "about": "Vakansiya",
+        "organization": "Tashkilot",
+        "place": "Qayerda oʻtadi",
+        "when": "Qachon oʻtadi",
+        "volunteers": "Koʻngillilar"
+      },
+      "unverified": "tasdiqlanmagan",
+      "unverifiedNotice": "Bu tashkilot hali tasdiqlanmagan. Administrator uni tasdiqlamaguncha uning vakansiyasi maʻqullanmaydi.",
+      "editDescription": "Oʻzgarishlar vakansiyani yana maʻqullashga yubormaguningizcha qoralama boʻlib qoladi."
     },
     "archive": {
       "trigger": "Arxivga",
       "title": "Vakansiya arxivga olinsinmi?",
       "description": "Arizalar qabul qilinmaydi va vakansiya ochiq roʻyxatdan yoʻqoladi. Buni bu yerdan qaytarib boʻlmaydi.",
       "confirm": "Arxivga olish",
-      "pending": "Arxivlanmoqda…"
+      "pending": "Arxivlanmoqda…",
+      "success": "Vakansiya arxivlandi."
     },
     "archivedNotice": "Bu vakansiya arxivda. Uni endi tahrirlab boʻlmaydi.",
     "submit": {
@@ -297,7 +301,8 @@
       "title": "Vakansiya tasdiqlashga yuborilsinmi?",
       "description": "Uni eʼlon qilishni administrator hal qiladi. Koʻrib chiqish davomida tahrirlab boʻlmaydi.",
       "confirm": "Yuborish",
-      "pending": "Yuborilmoqda…"
+      "pending": "Yuborilmoqda…",
+      "success": "Vakansiya maʻqullash uchun yuborildi."
     },
     "approval": {
       "title": "Tasdiqlash",
@@ -330,7 +335,10 @@
         "capacity": "joylar soni",
         "estimatedTotalHours": "taxminiy soatlar",
         "location": "oʻtkaziladigan joy"
-      }
+      },
+      "readyTitle": "Koʻngillilar uchun tayyor",
+      "readyBlocked": "Bu vakansiya hali tayyor emas",
+      "readyLine": "Maʻqullash uchun kerak boʻlgan hamma narsa joyida."
     }
   },
   "applications": {

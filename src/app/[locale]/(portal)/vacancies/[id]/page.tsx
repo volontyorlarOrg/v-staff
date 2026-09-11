@@ -6,7 +6,6 @@ import {
   AttendanceRoster,
   type RosterRow,
 } from "@/components/attendance/attendance-roster";
-import { ConfirmAction } from "@/components/forms/confirm-action";
 import { DefinitionList } from "@/components/portal/definition-list";
 import { Panel } from "@/components/portal/panel";
 import {
@@ -17,8 +16,10 @@ import {
 import { LoadFailure } from "@/components/states/load-failure";
 import { PageHeader } from "@/components/states/page-header";
 import { StatePanel } from "@/components/states/state-panel";
-import { VacancyForm } from "@/components/vacancies/vacancy-form";
-import { buttonClass } from "@/components/ui/button";
+import { ReadinessList } from "@/components/vacancies/readiness-list";
+import { VacancyDialog } from "@/components/vacancies/vacancy-dialog";
+import { VacancyWorkflow } from "@/components/vacancies/vacancy-workflow";
+import { Button, buttonClass } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import { failureOf, isReady } from "@/lib/api/load";
 import { loadApplications } from "@/lib/applications/data.server";
@@ -44,7 +45,11 @@ import {
   updateVacancyAction,
 } from "@/lib/vacancies/actions";
 import { loadOrganizations, loadVacancy } from "@/lib/vacancies/data.server";
-import { errorCatalog, vacancyFormLabels } from "@/lib/vacancies/labels.server";
+import {
+  errorCatalog,
+  vacancyDialogLabels,
+  vacancyWorkflowLabels,
+} from "@/lib/vacancies/labels.server";
 import { toDateTimeLocal } from "@/lib/vacancies/form";
 
 export const dynamic = "force-dynamic";
@@ -121,12 +126,17 @@ export default async function VacancyPage({
   );
 
   const submittable = canSubmitForApproval(vacancy);
-  const confirmErrors = await errorCatalog();
-  const labels = await vacancyFormLabels(
-    t("form.submitUpdate"),
-    t("form.pending"),
-    t("form.updated"),
-  );
+  const workflowLabels = await vacancyWorkflowLabels();
+  const editLabels = await vacancyDialogLabels("edit");
+  const editable = canEditVacancy(vacancy) && isReady(organizations);
+
+  const abilities = {
+    submit: submittable,
+    approve: false,
+    requestChanges: false,
+    reject: false,
+    archive: canArchive(vacancy),
+  };
 
   const applicationsFailure = failureOf(applications);
   const rows = isReady(applications) ? applications.data : [];
@@ -205,39 +215,59 @@ export default async function VacancyPage({
         description={vacancy.summary}
         actions={
           <>
-            {submittable && missing.length === 0 ? (
-              <ConfirmAction
-                action={submitVacancyForApprovalAction}
-                fields={{ id: vacancy.id }}
-                labels={{
-                  trigger: t("submit.trigger"),
-                  title: t("submit.title"),
-                  description: t("submit.description"),
-                  confirm: t("submit.confirm"),
-                  cancel: common("cancel"),
-                  pending: t("submit.pending"),
-                  fallbackError: errors("server"),
-                  errors: confirmErrors,
+            {editable ? (
+              <VacancyDialog
+                action={updateVacancyAction}
+                id={vacancy.id}
+                labels={editLabels}
+                defaults={{
+                  title: vacancy.title,
+                  slug: vacancy.slug,
+                  summary: vacancy.summary,
+                  description: vacancy.description,
+                  organizationId: vacancy.organizationId,
+                  region: vacancy.region,
+                  format: vacancy.format,
+                  city: vacancy.city ?? "",
+                  locationName: vacancy.locationName ?? "",
+                  startsAt: toDateTimeLocal(vacancy.startsAt),
+                  endsAt: toDateTimeLocal(vacancy.endsAt),
+                  applicationDeadline: toDateTimeLocal(vacancy.applicationDeadline),
+                  capacity:
+                    vacancy.capacity === undefined ? "" : String(vacancy.capacity),
+                  estimatedTotalHours:
+                    vacancy.estimatedTotalHours === undefined
+                      ? ""
+                      : String(vacancy.estimatedTotalHours),
+                  requirements: vacancy.requirements.join("\n"),
                 }}
+                organizations={
+                  isReady(organizations)
+                    ? organizations.data.map((item) => ({
+                        id: item.id,
+                        name: item.name,
+                        verified: item.verified,
+                      }))
+                    : []
+                }
+                regions={REGIONS}
+                formats={VACANCY_FORMATS}
+                trigger={
+                  <Button type="button" size="sm" variant="outline">
+                    {t("form.editTitle")}
+                  </Button>
+                }
               />
             ) : null}
-            {canArchive(vacancy) ? (
-              <ConfirmAction
-                action={archiveVacancyAction}
-                tone="danger"
-                fields={{ id: vacancy.id }}
-                labels={{
-                  trigger: t("archive.trigger"),
-                  title: t("archive.title"),
-                  description: t("archive.description"),
-                  confirm: t("archive.confirm"),
-                  cancel: common("cancel"),
-                  pending: t("archive.pending"),
-                  fallbackError: errors("server"),
-                  errors: confirmErrors,
-                }}
-              />
-            ) : null}
+
+            <VacancyWorkflow
+              vacancyId={vacancy.id}
+              abilities={abilities}
+              missing={missing}
+              labels={workflowLabels}
+              submitAction={submitVacancyForApprovalAction}
+              archiveAction={archiveVacancyAction}
+            />
           </>
         }
       />
@@ -280,18 +310,26 @@ export default async function VacancyPage({
         <StatePanel role="status" title={t("archivedNotice")} />
       ) : null}
 
-      {submittable && missing.length > 0 ? (
-        <StatePanel
-          role="status"
-          tone="notice"
-          title={t("approval.missingTitle")}
-          description={`${t("approval.missingDescription")} ${missing
-            .map((requirement) => t(`approval.requirements.${requirement}`))
-            .join(", ")}`}
-        />
-      ) : null}
-
       <Panel title={t("approval.title")} description={t("approval.description")}>
+        {state !== "archived" && state !== "rejected" ? (
+          <div className="mb-5 rounded-lg border border-border bg-surface-sunk/50 px-4 py-3">
+            <p className="text-sm font-semibold text-ink">
+              {missing.length === 0
+                ? t("approval.readyTitle")
+                : t("approval.missingTitle")}
+            </p>
+            {missing.length === 0 ? (
+              <p className="mt-1 text-sm text-ink-muted">{t("approval.readyLine")}</p>
+            ) : (
+              <ReadinessList
+                missing={missing}
+                labels={workflowLabels.readiness}
+                className="mt-2"
+              />
+            )}
+          </div>
+        ) : null}
+
         <DefinitionList
           items={[
             { term: t("approval.status"), value: t(`state.${state}`) },
@@ -503,43 +541,6 @@ export default async function VacancyPage({
           </ul>
         )}
       </Panel>
-
-      {canEditVacancy(vacancy) && isReady(organizations) ? (
-        <Panel title={t("form.editTitle")}>
-          <VacancyForm
-            action={updateVacancyAction}
-            id={vacancy.id}
-            labels={labels}
-            defaults={{
-              title: vacancy.title,
-              slug: vacancy.slug,
-              summary: vacancy.summary,
-              description: vacancy.description,
-              organizationId: vacancy.organizationId,
-              region: vacancy.region,
-              format: vacancy.format,
-              city: vacancy.city ?? "",
-              locationName: vacancy.locationName ?? "",
-              startsAt: toDateTimeLocal(vacancy.startsAt),
-              endsAt: toDateTimeLocal(vacancy.endsAt),
-              applicationDeadline: toDateTimeLocal(vacancy.applicationDeadline),
-              capacity: vacancy.capacity === undefined ? "" : String(vacancy.capacity),
-              estimatedTotalHours:
-                vacancy.estimatedTotalHours === undefined
-                  ? ""
-                  : String(vacancy.estimatedTotalHours),
-              requirements: vacancy.requirements.join("\n"),
-            }}
-            organizations={organizations.data.map((organization) => ({
-              id: organization.id,
-              name: organization.name,
-              verified: organization.verified,
-            }))}
-            regions={REGIONS}
-            formats={VACANCY_FORMATS}
-          />
-        </Panel>
-      ) : null}
     </>
   );
 }

@@ -97,7 +97,7 @@ export default async function ActivityPage({
             />
           ) : (
             <>
-              <div className="rounded-xl border border-border bg-card">
+              <div className="rounded-xl border border-border/70 panel-surface">
                 <Table>
                   <TableCaption className="sr-only">{t("table.caption")}</TableCaption>
                   <TableHeader>
