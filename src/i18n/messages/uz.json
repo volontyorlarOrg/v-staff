@@ -10,7 +10,6 @@
     "signOut": "Chiqish",
     "signingOut": "Chiqilmoqda…",
     "signedIn": "Tizimdasiz",
-    "fixtureMode": "Ishlab chiqish uchun namunaviy maʼlumot — bu sahifada API dan kelgan hech narsa yoʻq",
     "apply": "Qoʻllash",
     "reset": "Filtrlarni tozalash",
     "previous": "Orqaga",
@@ -57,7 +56,6 @@
     "submit": "Kirish",
     "submitting": "Kirilmoqda…",
     "accessNotice": "Koordinator hisoblarini administrator yaratadi. Bu yerda roʻyxatdan oʻtish yoʻq va parolni tiklab boʻlmaydi — administratordan yangi vaqtinchalik parol soʻrang.",
-    "fixtureHint": "Namunaviy maʼlumot rejimi yoqilgan. {email} va {password} paroli bilan kiring.",
     "status": {
       "expired": "Seans tugadi. Davom etish uchun qaytadan kiring.",
       "signedOut": "Portaldan chiqdingiz.",
