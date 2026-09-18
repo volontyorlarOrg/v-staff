@@ -10,7 +10,6 @@
     "signOut": "Sign out",
     "signingOut": "Signing out…",
     "signedIn": "Signed in",
-    "fixtureMode": "Development fixtures — nothing on this screen comes from the API",
     "apply": "Apply",
     "reset": "Clear filters",
     "previous": "Previous",
@@ -57,7 +56,6 @@
     "submit": "Sign in",
     "submitting": "Signing in…",
     "accessNotice": "Coordinator accounts are created by an administrator. There is no sign-up here, and no way to recover a password from this page — ask an administrator for a new temporary one.",
-    "fixtureHint": "Fixture mode is on. Sign in with {email} and the password {password}.",
     "status": {
       "expired": "Your session ended. Sign in again to continue.",
       "signedOut": "You are signed out.",
