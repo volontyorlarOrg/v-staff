@@ -6,7 +6,7 @@ import {
   AttendanceRoster,
   type RosterRow,
 } from "@/components/attendance/attendance-roster";
-import { DefinitionList } from "@/components/portal/definition-list";
+import { DefinitionList, type Definition } from "@/components/portal/definition-list";
 import { Panel } from "@/components/portal/panel";
 import {
   StatusBadge,
@@ -109,7 +109,6 @@ export default async function VacancyPage({
   const missing = missingForApproval(
     {
       title: vacancy.title,
-      summary: vacancy.summary,
       description: vacancy.description,
       format: vacancy.format,
       region: vacancy.region,
@@ -137,6 +136,31 @@ export default async function VacancyPage({
     reject: false,
     archive: canArchive(vacancy),
   };
+
+  const readinessMatters = abilities.submit;
+  const reviewer =
+    vacancy.approvalReviewedBy?.displayName ??
+    vacancy.approvalReviewedBy?.id ??
+    vacancy.approvalReviewedById;
+  const approvalFacts: Definition[] = [
+    ...(vacancy.approvalSubmittedAt
+      ? [
+          {
+            term: t("approval.submitted"),
+            value: format.dateTime(new Date(vacancy.approvalSubmittedAt), "stamp"),
+          },
+        ]
+      : []),
+    ...(vacancy.approvalReviewedAt
+      ? [
+          {
+            term: t("approval.decided"),
+            value: format.dateTime(new Date(vacancy.approvalReviewedAt), "stamp"),
+          },
+        ]
+      : []),
+    ...(reviewer ? [{ term: t("approval.reviewer"), value: reviewer }] : []),
+  ];
 
   const applicationsFailure = failureOf(applications);
   const rows = isReady(applications) ? applications.data : [];
@@ -212,7 +236,6 @@ export default async function VacancyPage({
       <PageHeader
         eyebrow={t("detail.eyebrow")}
         title={vacancy.title}
-        description={vacancy.summary}
         actions={
           <>
             {editable ? (
@@ -223,7 +246,6 @@ export default async function VacancyPage({
                 defaults={{
                   title: vacancy.title,
                   slug: vacancy.slug,
-                  summary: vacancy.summary,
                   description: vacancy.description,
                   organizationId: vacancy.organizationId,
                   region: vacancy.region,
@@ -239,6 +261,7 @@ export default async function VacancyPage({
                     vacancy.estimatedTotalHours === undefined
                       ? ""
                       : String(vacancy.estimatedTotalHours),
+                  acceptanceMode: vacancy.acceptanceMode,
                   requirements: vacancy.requirements.join("\n"),
                 }}
                 organizations={
@@ -310,56 +333,36 @@ export default async function VacancyPage({
         <StatePanel role="status" title={t("archivedNotice")} />
       ) : null}
 
-      <Panel title={t("approval.title")} description={t("approval.description")}>
-        {state !== "archived" && state !== "rejected" ? (
-          <div className="mb-5 rounded-lg border border-border bg-surface-sunk/50 px-4 py-3">
-            <p className="text-sm font-semibold text-ink">
-              {missing.length === 0
-                ? t("approval.readyTitle")
-                : t("approval.missingTitle")}
-            </p>
-            {missing.length === 0 ? (
-              <p className="mt-1 text-sm text-ink-muted">{t("approval.readyLine")}</p>
-            ) : (
-              <ReadinessList
-                missing={missing}
-                labels={workflowLabels.readiness}
-                className="mt-2"
-              />
-            )}
-          </div>
-        ) : null}
+      {readinessMatters || approvalFacts.length > 0 ? (
+        <Panel title={t("approval.title")} description={t("approval.description")}>
+          {readinessMatters ? (
+            <div
+              className={
+                approvalFacts.length > 0
+                  ? "mb-5 rounded-lg border border-border bg-surface-sunk/50 px-4 py-3"
+                  : "rounded-lg border border-border bg-surface-sunk/50 px-4 py-3"
+              }
+            >
+              <p className="text-sm font-semibold text-ink">
+                {missing.length === 0
+                  ? t("approval.readyTitle")
+                  : t("approval.missingTitle")}
+              </p>
+              {missing.length === 0 ? (
+                <p className="mt-1 text-sm text-ink-muted">{t("approval.readyLine")}</p>
+              ) : (
+                <ReadinessList
+                  missing={missing}
+                  labels={workflowLabels.readiness}
+                  className="mt-2"
+                />
+              )}
+            </div>
+          ) : null}
 
-        <DefinitionList
-          items={[
-            { term: t("approval.status"), value: t(`state.${state}`) },
-            {
-              term: t("approval.submitted"),
-              value: vacancy.approvalSubmittedAt
-                ? format.dateTime(new Date(vacancy.approvalSubmittedAt), "stamp")
-                : t("approval.notSubmitted"),
-            },
-            {
-              term: t("approval.decided"),
-              value: vacancy.approvalReviewedAt
-                ? format.dateTime(new Date(vacancy.approvalReviewedAt), "stamp")
-                : common("notSet"),
-            },
-            {
-              term: t("approval.reviewer"),
-              value:
-                vacancy.approvalReviewedBy?.displayName ??
-                vacancy.approvalReviewedBy?.id ??
-                vacancy.approvalReviewedById ??
-                common("notSet"),
-            },
-            {
-              term: t("approval.note"),
-              value: vacancy.approvalNote ?? t("approval.noNote"),
-            },
-          ]}
-        />
-      </Panel>
+          {approvalFacts.length > 0 ? <DefinitionList items={approvalFacts} /> : null}
+        </Panel>
+      ) : null}
 
       <Panel title={t("detail.details")}>
         <DefinitionList
@@ -373,21 +376,22 @@ export default async function VacancyPage({
               term: t("fields.format"),
               value: vocabulary(`formats.${vacancy.format}`),
             },
-            { term: t("fields.city"), value: vacancy.city ?? common("notSet") },
-            {
-              term: t("fields.locationName"),
-              value: vacancy.locationName ?? common("notSet"),
-            },
+            ...(vacancy.city ? [{ term: t("fields.city"), value: vacancy.city }] : []),
+            ...(vacancy.locationName
+              ? [{ term: t("fields.locationName"), value: vacancy.locationName }]
+              : []),
             {
               term: t("fields.startsAt"),
               value: format.dateTime(new Date(vacancy.startsAt), "stamp"),
             },
-            {
-              term: t("fields.endsAt"),
-              value: vacancy.endsAt
-                ? format.dateTime(new Date(vacancy.endsAt), "stamp")
-                : common("notSet"),
-            },
+            ...(vacancy.endsAt
+              ? [
+                  {
+                    term: t("fields.endsAt"),
+                    value: format.dateTime(new Date(vacancy.endsAt), "stamp"),
+                  },
+                ]
+              : []),
             {
               term: t("fields.applicationDeadline"),
               value: format.dateTime(new Date(vacancy.applicationDeadline), "stamp"),
@@ -399,12 +403,17 @@ export default async function VacancyPage({
                   ? common("none")
                   : format.number(vacancy.capacity),
             },
+            ...(vacancy.estimatedTotalHours === undefined
+              ? []
+              : [
+                  {
+                    term: t("fields.estimatedTotalHours"),
+                    value: format.number(vacancy.estimatedTotalHours),
+                  },
+                ]),
             {
-              term: t("fields.estimatedTotalHours"),
-              value:
-                vacancy.estimatedTotalHours === undefined
-                  ? common("notSet")
-                  : format.number(vacancy.estimatedTotalHours),
+              term: t("fields.acceptanceMode"),
+              value: vocabulary(`acceptanceModes.${vacancy.acceptanceMode}`),
             },
           ]}
         />
@@ -445,75 +454,74 @@ export default async function VacancyPage({
         </Panel>
       ) : null}
 
-      <Panel
-        title={attendanceCopy("roster.title")}
-        description={attendanceCopy("roster.description")}
-      >
-        {applicationsFailure ? (
-          <LoadFailure failure={applicationsFailure} />
-        ) : accepted.length === 0 ? (
-          <p className="text-sm text-ink-muted">
-            {attendanceCopy("roster.noAccepted")}
-          </p>
-        ) : !attendanceOpen ? (
-          <StatePanel
-            role="status"
-            title={attendanceCopy("roster.closedTitle")}
-            description={
-              opensAt
-                ? attendanceCopy("roster.closedDescription", {
-                    when: format.dateTime(opensAt, "stamp"),
-                  })
-                : attendanceCopy("roster.closedUnknown")
-            }
-          />
-        ) : (
-          <AttendanceRoster
-            vacancyId={vacancy.id}
-            rows={rosterRows}
-            outcomes={RESOLVABLE_ATTENDANCE_OUTCOMES}
-            {...(vacancy.estimatedTotalHours === undefined
-              ? {}
-              : { defaultHours: String(vacancy.estimatedTotalHours) })}
-            labels={{
-              caption: attendanceCopy("roster.caption"),
-              volunteer: attendanceCopy("table.volunteer"),
-              state: attendanceCopy("table.outcome"),
-              select: attendanceCopy("roster.select"),
-              selectAll: attendanceCopy("roster.selectAll"),
-              selected: Array.from({ length: rosterRows.length + 1 }, (_item, count) =>
-                attendanceCopy("roster.selected", { count }),
-              ),
-              correct: attendanceCopy("roster.correct"),
-              batchTitle: attendanceCopy("roster.batchTitle"),
-              batchHelp: attendanceCopy("roster.batchHelp"),
-              outcome: attendanceCopy("roster.outcome"),
-              outcomes: outcomeLabels,
-              hours: attendanceCopy("roster.hours"),
-              hoursHelp:
-                vacancy.estimatedTotalHours === undefined
-                  ? attendanceCopy("resolve.hoursHelp")
-                  : attendanceCopy("roster.hoursHelp"),
-              submit: attendanceCopy("roster.submit"),
-              pending: attendanceCopy("roster.pending"),
-              success: attendanceCopy("roster.success"),
-              fallbackError: errors("server"),
-              errors: attendanceErrors,
-              row: {
-                outcome: attendanceCopy("resolve.outcome"),
+      {applicationsFailure || accepted.length > 0 ? (
+        <Panel
+          title={attendanceCopy("roster.title")}
+          description={attendanceCopy("roster.description")}
+        >
+          {applicationsFailure ? (
+            <LoadFailure failure={applicationsFailure} />
+          ) : !attendanceOpen ? (
+            <StatePanel
+              role="status"
+              title={attendanceCopy("roster.closedTitle")}
+              description={
+                opensAt
+                  ? attendanceCopy("roster.closedDescription", {
+                      when: format.dateTime(opensAt, "stamp"),
+                    })
+                  : attendanceCopy("roster.closedUnknown")
+              }
+            />
+          ) : (
+            <AttendanceRoster
+              vacancyId={vacancy.id}
+              rows={rosterRows}
+              outcomes={RESOLVABLE_ATTENDANCE_OUTCOMES}
+              {...(vacancy.estimatedTotalHours === undefined
+                ? {}
+                : { defaultHours: String(vacancy.estimatedTotalHours) })}
+              labels={{
+                caption: attendanceCopy("roster.caption"),
+                volunteer: attendanceCopy("table.volunteer"),
+                state: attendanceCopy("table.outcome"),
+                select: attendanceCopy("roster.select"),
+                selectAll: attendanceCopy("roster.selectAll"),
+                selected: Array.from(
+                  { length: rosterRows.length + 1 },
+                  (_item, count) => attendanceCopy("roster.selected", { count }),
+                ),
+                correct: attendanceCopy("roster.correct"),
+                batchTitle: attendanceCopy("roster.batchTitle"),
+                batchHelp: attendanceCopy("roster.batchHelp"),
+                outcome: attendanceCopy("roster.outcome"),
                 outcomes: outcomeLabels,
-                hours: attendanceCopy("resolve.hours"),
-                hoursHelp: attendanceCopy("resolve.hoursHelp"),
-                submit: attendanceCopy("resolve.confirm"),
-                pending: attendanceCopy("resolve.pending"),
-                success: attendanceCopy("resolve.success"),
+                hours: attendanceCopy("roster.hours"),
+                hoursHelp:
+                  vacancy.estimatedTotalHours === undefined
+                    ? attendanceCopy("resolve.hoursHelp")
+                    : attendanceCopy("roster.hoursHelp"),
+                submit: attendanceCopy("roster.submit"),
+                pending: attendanceCopy("roster.pending"),
+                success: attendanceCopy("roster.success"),
                 fallbackError: errors("server"),
                 errors: attendanceErrors,
-              },
-            }}
-          />
-        )}
-      </Panel>
+                row: {
+                  outcome: attendanceCopy("resolve.outcome"),
+                  outcomes: outcomeLabels,
+                  hours: attendanceCopy("resolve.hours"),
+                  hoursHelp: attendanceCopy("resolve.hoursHelp"),
+                  submit: attendanceCopy("resolve.confirm"),
+                  pending: attendanceCopy("resolve.pending"),
+                  success: attendanceCopy("resolve.success"),
+                  fallbackError: errors("server"),
+                  errors: attendanceErrors,
+                },
+              }}
+            />
+          )}
+        </Panel>
+      ) : null}
 
       <Panel title={t("detail.applications")}>
         {applicationsFailure ? (

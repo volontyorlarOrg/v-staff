@@ -17,7 +17,6 @@ import {
 
 const ready: ApprovalCandidate = {
   title: "Winter book drive",
-  summary: "Collect and sort books.",
   description: "A longer description of the work.",
   format: "onsite",
   region: "tashkent-city",
