@@ -54,7 +54,6 @@ export function canRejectVacancy(vacancy: ApprovalSubject): boolean {
 export const APPROVAL_REQUIREMENTS = [
   "organization",
   "title",
-  "summary",
   "description",
   "format",
   "region",
@@ -70,7 +69,6 @@ export type ApprovalRequirement = (typeof APPROVAL_REQUIREMENTS)[number];
 
 export type ApprovalCandidate = {
   title: string;
-  summary: string;
   description: string;
   format: VacancyFormat;
   region: string;
@@ -104,7 +102,6 @@ export function missingForApproval(
 
   if (!vacancy.organization?.verified) missing.push("organization");
   if (!isFilled(vacancy.title)) missing.push("title");
-  if (!isFilled(vacancy.summary)) missing.push("summary");
   if (!isFilled(vacancy.description)) missing.push("description");
   if (!vacancy.format) missing.push("format");
   if (!isFilled(vacancy.region)) missing.push("region");
