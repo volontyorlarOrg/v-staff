@@ -264,7 +264,6 @@ test.describe("the vacancy approval workflow", () => {
   ) {
     await page.getByLabel("Title").fill(title);
     await page.getByLabel("Address").fill(slug);
-    await page.getByLabel("Summary", { exact: true }).fill(`${title} summary`);
     await page.getByLabel("Description").fill(`${title} description`);
     await page.getByLabel("Organization").selectOption({ label: organization });
     await page.getByLabel("City", { exact: true }).fill("Tashkent");
@@ -289,6 +288,10 @@ test.describe("the vacancy approval workflow", () => {
       "library-shelving-day",
       "Chilonzor Reading Corners",
     );
+    await expect(dialog(page).getByRole("radio", { name: /^Manually/ })).toBeChecked();
+    await dialog(page)
+      .getByRole("radio", { name: /^Automatically/ })
+      .check();
     await dialog(page).getByRole("button", { name: "Create the draft" }).click();
     await expect(dialog(page)).toHaveCount(0);
 
@@ -301,6 +304,7 @@ test.describe("the vacancy approval workflow", () => {
     await expect(page.getByRole("heading", { level: 1 })).toContainText(
       "Library shelving day",
     );
+    await expect(page.getByText("Automatically", { exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Edit vacancy" })).toBeVisible();
 
     await openDialog(page, "Send for approval");

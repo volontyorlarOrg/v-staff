@@ -127,6 +127,24 @@ list again and answers `opportunityIncomplete`, `organizationNotVerified`,
 refused outside `draft` and `changes_requested` (`opportunityNotEditable`), so
 a vacancy under review is locked and a rejected one is read-only for good.
 
+## How a vacancy accepts applications
+
+Every vacancy carries `acceptanceMode`, chosen in the vacancy form as two
+radio cards and sent on create and edit. `manual` is the default: a sent
+application waits as `submitted` for a decision. With `automatic`, the backend
+accepts each sent application at once while places remain, creates its
+attendance record and turns the vacancy `full` when the last place goes; the
+application then has `reviewedAt` equal to `submittedAt` and no
+`reviewedById`, which is how its history says "Accepted automatically". The
+review form still offers every decision, so an organiser can reject an
+automatically accepted volunteer. A response without `acceptanceMode` reads as
+`manual`.
+
+The short description (`summary`) is gone from the form, the readiness list,
+the page header and the search, which now matches the title, the description
+and the address. The backend still accepts the field from older builds and
+ignores it.
+
 ## Attendance opens when the event ends
 
 `PUT /staff/attendance/{applicationId}` resolves one volunteer, and
