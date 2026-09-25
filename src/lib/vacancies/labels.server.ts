@@ -44,6 +44,11 @@ const ERROR_CODES = [
   "opportunityCannotBeSubmitted",
   "opportunityNotPendingApproval",
   "opportunityNotEditable",
+  "opportunityImageInvalid",
+  "opportunityImageTooLarge",
+  "opportunityImageFormatUnsupported",
+  "opportunityImageTooSmall",
+  "opportunityImageStorageUnavailable",
   "approvalNoteRequired",
   "deadlinePassed",
 ] as const;
@@ -62,7 +67,6 @@ async function vacancyFieldLabels(): Promise<VacancyFieldLabels> {
   return {
     fields: {
       title: t("fields.title"),
-      slug: t("fields.slug"),
       description: t("fields.description"),
       organizationId: t("fields.organization"),
       region: t("fields.region"),
@@ -78,7 +82,6 @@ async function vacancyFieldLabels(): Promise<VacancyFieldLabels> {
       requirements: t("fields.requirements"),
     },
     help: {
-      slug: t("fields.slugHelp"),
       organizationId: t("fields.organizationHelp"),
       capacity: t("fields.capacityHelp"),
       estimatedTotalHours: t("fields.estimatedTotalHoursHelp"),

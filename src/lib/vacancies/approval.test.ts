@@ -20,13 +20,8 @@ const ready: ApprovalCandidate = {
   description: "A longer description of the work.",
   format: "onsite",
   region: "tashkent-city",
-  city: "Tashkent",
-  locationName: "Chilonzor library",
   startsAt: "2026-10-01T09:00:00.000Z",
-  endsAt: "2026-10-01T15:00:00.000Z",
   applicationDeadline: "2026-09-20T18:00:00.000Z",
-  capacity: 20,
-  estimatedTotalHours: 6,
   organization: { verified: true },
 };
 
@@ -70,6 +65,10 @@ describe("what a coordinator may do", () => {
 
   it("locks a vacancy while an administrator is looking at it", () => {
     expect(canEditVacancy({ approvalStatus: "pending_review" })).toBe(false);
+  });
+
+  it("lets a coordinator revise a published vacancy for another approval", () => {
+    expect(canEditVacancy({ approvalStatus: "approved" })).toBe(true);
   });
 
   it("keeps a rejected vacancy read-only for good", () => {
@@ -118,8 +117,18 @@ describe("missingForApproval", () => {
     ).toContain("organization");
   });
 
-  it("requires an end, so attendance has a moment it can open", () => {
-    expect(missingForApproval({ ...ready, endsAt: undefined })).toContain("endsAt");
+  it("allows optional logistics to be filled in after the essentials", () => {
+    expect(
+      missingForApproval({
+        title: ready.title,
+        description: ready.description,
+        format: ready.format,
+        region: ready.region,
+        startsAt: ready.startsAt,
+        applicationDeadline: ready.applicationDeadline,
+        organization: ready.organization,
+      }),
+    ).toEqual([]);
   });
 
   it("refuses a deadline that has already passed, as the API does", () => {
@@ -139,43 +148,6 @@ describe("missingForApproval", () => {
       );
     }
   });
-
-  it("requires a positive whole number of places", () => {
-    expect(missingForApproval({ ...ready, capacity: 0 })).toContain("capacity");
-    expect(missingForApproval({ ...ready, capacity: undefined })).toContain("capacity");
-  });
-
-  it("requires positive estimated hours for the whole event", () => {
-    expect(missingForApproval({ ...ready, estimatedTotalHours: 0 })).toContain(
-      "estimatedTotalHours",
-    );
-  });
-
-  it("requires a city and a venue on site and in a hybrid", () => {
-    expect(missingForApproval({ ...ready, city: undefined })).toContain("location");
-    expect(
-      missingForApproval({ ...ready, format: "hybrid", locationName: undefined }),
-    ).toContain("location");
-  });
-
-  it("requires a named online location when the work is remote", () => {
-    expect(
-      missingForApproval({
-        ...ready,
-        format: "remote",
-        city: undefined,
-        locationName: undefined,
-      }),
-    ).toContain("location");
-    expect(
-      missingForApproval({
-        ...ready,
-        format: "remote",
-        city: undefined,
-        locationName: "Public briefing stream, link sent on the day",
-      }),
-    ).toEqual([]);
-  });
 });
 
 describe("hasMeetingCredentials", () => {
@@ -192,8 +164,12 @@ describe("hasMeetingCredentials", () => {
 });
 
 describe("when attendance opens", () => {
+  const scheduled = { ...ready, endsAt: "2026-10-01T15:00:00.000Z" };
+
   it("opens when the event ends", () => {
-    expect(attendanceOpensAt(ready)?.toISOString()).toBe("2026-10-01T15:00:00.000Z");
+    expect(attendanceOpensAt(scheduled)?.toISOString()).toBe(
+      "2026-10-01T15:00:00.000Z",
+    );
   });
 
   it("falls back to the start for a legacy record with no end", () => {
@@ -203,7 +179,11 @@ describe("when attendance opens", () => {
   });
 
   it("stays shut until that moment has passed", () => {
-    expect(isAttendanceOpen(ready, new Date("2026-10-01T14:59:00.000Z"))).toBe(false);
-    expect(isAttendanceOpen(ready, new Date("2026-10-01T15:00:00.000Z"))).toBe(true);
+    expect(isAttendanceOpen(scheduled, new Date("2026-10-01T14:59:00.000Z"))).toBe(
+      false,
+    );
+    expect(isAttendanceOpen(scheduled, new Date("2026-10-01T15:00:00.000Z"))).toBe(
+      true,
+    );
   });
 });

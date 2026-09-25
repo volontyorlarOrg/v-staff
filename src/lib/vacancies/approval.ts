@@ -31,7 +31,7 @@ export function isPermanentlyRejected(vacancy: ApprovalSubject): boolean {
 
 export function canEditVacancy(vacancy: ApprovalSubject): boolean {
   const state = vacancyStateOf(vacancy);
-  return state === "draft" || state === "changes_requested";
+  return state === "draft" || state === "changes_requested" || state === "approved";
 }
 
 export function canSubmitForApproval(vacancy: ApprovalSubject): boolean {
@@ -58,11 +58,7 @@ export const APPROVAL_REQUIREMENTS = [
   "format",
   "region",
   "startsAt",
-  "endsAt",
   "applicationDeadline",
-  "capacity",
-  "estimatedTotalHours",
-  "location",
 ] as const;
 
 export type ApprovalRequirement = (typeof APPROVAL_REQUIREMENTS)[number];
@@ -72,13 +68,8 @@ export type ApprovalCandidate = {
   description: string;
   format: VacancyFormat;
   region: string;
-  city?: string | undefined;
-  locationName?: string | undefined;
   startsAt: string;
-  endsAt?: string | undefined;
   applicationDeadline: string;
-  capacity?: number | undefined;
-  estimatedTotalHours?: number | undefined;
   organization?: { verified: boolean } | undefined;
 };
 
@@ -88,10 +79,6 @@ function isFilled(value: string | undefined): boolean {
 
 function isMoment(value: string | undefined): boolean {
   return isFilled(value) && !Number.isNaN(Date.parse(value as string));
-}
-
-export function requiresVenue(format: VacancyFormat): boolean {
-  return format === "onsite" || format === "hybrid";
 }
 
 export function missingForApproval(
@@ -106,7 +93,6 @@ export function missingForApproval(
   if (!vacancy.format) missing.push("format");
   if (!isFilled(vacancy.region)) missing.push("region");
   if (!isMoment(vacancy.startsAt)) missing.push("startsAt");
-  if (!isMoment(vacancy.endsAt)) missing.push("endsAt");
 
   if (!isMoment(vacancy.applicationDeadline)) {
     missing.push("applicationDeadline");
@@ -117,30 +103,6 @@ export function missingForApproval(
     missing.push("applicationDeadline");
   } else if (now && Date.parse(vacancy.applicationDeadline) <= now.getTime()) {
     missing.push("applicationDeadline");
-  }
-
-  if (
-    vacancy.capacity === undefined ||
-    !Number.isInteger(vacancy.capacity) ||
-    vacancy.capacity < 1
-  ) {
-    missing.push("capacity");
-  }
-
-  if (
-    vacancy.estimatedTotalHours === undefined ||
-    !Number.isFinite(vacancy.estimatedTotalHours) ||
-    vacancy.estimatedTotalHours <= 0
-  ) {
-    missing.push("estimatedTotalHours");
-  }
-
-  if (requiresVenue(vacancy.format)) {
-    if (!isFilled(vacancy.city) || !isFilled(vacancy.locationName)) {
-      missing.push("location");
-    }
-  } else if (!isFilled(vacancy.locationName)) {
-    missing.push("location");
   }
 
   return missing;
