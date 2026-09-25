@@ -134,9 +134,14 @@ empty value instead of silently keeping the old detail. Publication still
 requires the verified organization, title, description, start, and future
 application deadline checked by the backend.
 
-The vacancy detail screen can upload, replace, or remove a photo after the
-draft exists. Its multipart `image` field uses `PUT /staff/opportunities/{id}/image`;
-`DELETE` on the same route removes it. The existing `imageUrl` read field is the
+The coordinator create and edit forms accept an optional photo alongside the
+vacancy fields. Creation first saves the draft to obtain its ID, then uploads
+the photo with multipart `image` on `PUT /staff/opportunities/{id}/image`.
+If that upload fails, the draft still exists and the coordinator is sent to
+its edit form to retry without creating a duplicate. Editing can replace the
+photo through `PUT` or remove it through `DELETE` on the same route. The form
+checks type, size and the 640 × 360 minimum before submitting, and keeps a
+chosen photo when a save fails. The existing `imageUrl` read field is the
 display URL. Editing an approved vacancy moves it back to draft and hides it
 from volunteers until administrator approval. Existing applications remain
 available; new draft submissions are blocked while it is hidden.
