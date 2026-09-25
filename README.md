@@ -39,13 +39,17 @@ ignored `.env.local` for a standalone setup or fixture work.
   control that creates an account. An administrator makes coordinators.
 - **A forced first password change.** A session that carries
   `passwordChangeRequired` cannot reach any other screen.
-- **Dashboard** — the coordinator's own vacancies, applications, attendance and
-  confirmed hours.
-- **Vacancies** — create a draft, edit it, publish it under a verified
-  organization, archive it. URL-backed filters and pagination.
-- **Applications** — the profile as submitted, the answers, the history, and a
-  decision with a note the volunteer can read.
-- **Attendance** — confirm attended, excused or cancelled, with hours.
+- **Today** — the coordinator's desk: vacancies returned for changes and drafts
+  to send, each with Edit and Send for approval; applications to decide in the
+  row; roll calls due; what is with an administrator; what they cleared today;
+  their work's totals.
+- **Vacancies** — create a draft on its own page, edit it, send it for approval
+  under a verified organization, archive it. URL-backed filters and pagination.
+- **Applications** — the profile as submitted, the essay and answers, the
+  history, and a decision with a note the volunteer can read, from the list or
+  the record.
+- **Attendance** — roll calls due, coming up and recorded; confirm attended,
+  excused or cancelled, with hours, for everyone selected or one row at a time.
 - **Volunteers** — only those who applied to this coordinator's vacancies, their
   password-login state, and a replacement temporary password.
 - **Activity** — this coordinator's own recorded actions.
