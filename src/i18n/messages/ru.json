@@ -827,7 +827,8 @@
       "user_password_replaced": "Назначен временный пароль",
       "user_username_changed": "Имя пользователя изменено",
       "user_avatar_updated": "Фото обновлено",
-      "user_avatar_removed": "Фото удалено"
+      "user_avatar_removed": "Фото удалено",
+      "user_progress_adjusted": "Изменены XP и часы"
     },
     "you": "Вы"
   }

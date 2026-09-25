@@ -827,7 +827,8 @@
       "user_password_replaced": "Vaqtinchalik parol berildi",
       "user_username_changed": "Foydalanuvchi nomi oʻzgartirildi",
       "user_avatar_updated": "Rasm yangilandi",
-      "user_avatar_removed": "Rasm olib tashlandi"
+      "user_avatar_removed": "Rasm olib tashlandi",
+      "user_progress_adjusted": "XP va soatlar oʻzgartirildi"
     },
     "you": "Siz"
   }
