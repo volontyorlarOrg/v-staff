@@ -123,9 +123,23 @@ The coordinator sends a vacancy for approval through
 `POST /staff/opportunities/{id}/submit-for-approval`. The portal only offers
 that control when `missingForApproval` is empty; the backend checks the same
 list again and answers `opportunityIncomplete`, `organizationNotVerified`,
-`deadlinePassed` or `invalidOpportunityDates` when it disagrees. Editing is
-refused outside `draft` and `changes_requested` (`opportunityNotEditable`), so
-a vacancy under review is locked and a rejected one is read-only for good.
+`deadlinePassed` or `invalidOpportunityDates` when it disagrees. A vacancy
+under review is locked to coordinators, and a rejected one remains read-only.
+
+The form keeps entered values when validation or the API rejects a save. It
+generates a stable URL slug from the title when creating a draft, rather than
+asking the coordinator for an address. End time, city, place, capacity, hours,
+and requirements can be added later; clearing one in an edit sends an explicit
+empty value instead of silently keeping the old detail. Publication still
+requires the verified organization, title, description, start, and future
+application deadline checked by the backend.
+
+The vacancy detail screen can upload, replace, or remove a photo after the
+draft exists. Its multipart `image` field uses `PUT /staff/opportunities/{id}/image`;
+`DELETE` on the same route removes it. The existing `imageUrl` read field is the
+display URL. Editing an approved vacancy moves it back to draft and hides it
+from volunteers until administrator approval. Existing applications remain
+available; new draft submissions are blocked while it is hidden.
 
 ## How a vacancy accepts applications
 
@@ -136,7 +150,7 @@ accepts each sent application at once while places remain, creates its
 attendance record and turns the vacancy `full` when the last place goes; the
 application then has `reviewedAt` equal to `submittedAt` and no
 `reviewedById`, which is how its history says "Accepted automatically". The
-review form still offers every decision, so an organiser can reject an
+decision row still offers every decision, so an organiser can reject an
 automatically accepted volunteer. A response without `acceptanceMode` reads as
 `manual`.
 
@@ -168,8 +182,39 @@ its address says "Not sent yet" instead of offering a decision. The backend
 stops returning drafts to the portals as well; the parse-time filter keeps a
 backend that still sends them from showing them.
 
+## Archiving, reversals and the navigation counts
+
+- **Archiving closes what nobody decided.** `POST …/opportunities/{id}/archive`
+  closes every `submitted` or `under_review` application to the vacancy in the
+  same transaction, tells each volunteer, and answers with
+  `closedApplications`. The archive dialog says how many it will close, counted
+  from the vacancy's loaded applications; archiving twice answers
+  `opportunityAlreadyArchived`. An archived vacancy is frozen: editing
+  (`opportunityNotEditable`), sending (`opportunityCannotBeSubmitted`),
+  deciding (`opportunityNotPendingApproval`) and accepting an application to it
+  (`opportunityArchived`) are all refused.
+- **An acceptance can be taken back only while attendance is open.** Reviewing
+  an `accepted` application to anything else removes its pending attendance
+  record; once attendance is resolved the backend answers
+  `attendanceAlreadyResolved`, and the application page stops offering the
+  reversal.
+- **A cleared field is sent as `null`.** `toVacancyUpdate` sends `null` for an
+  emptied optional field (`city`, `endsAt`, `locationName`, `capacity`,
+  `estimatedTotalHours`) and `[]` for emptied requirements, so an edit removes a
+  value instead of silently keeping it. A decision offered with a note sends the
+  note even when it is empty, so an old note can be cleared.
+- **The navigation counts come from statistics.** `totals.pendingApproval`,
+  `totals.changesRequested`, `totals.pendingReview` and `totals.attendanceDue`
+  badge Vacancies, Applications and Attendance; a coordinator's Vacancies badge counts what came back for changes. `attendanceDue` counts
+  volunteers to record, not events. A backend that does not send a count yet
+  parses as `0` and draws no badge.
+
 ## Where the portal fills a gap, and how
 
+- **The applications list names each application's vacancy but not its
+  timing.** `opportunity` there carries only `id`, `slug` and `title`, so the
+  attendance page and Today read event times from the vacancies list, and a
+  vacancy whose times are unknown is never called due.
 - **The applications list carries `answers`, `volunteer`, `opportunity` and
   `attendance`.** The roster renders an outcome only when the record is present
   and says "not published by the API" when it is not. It never guesses that a
