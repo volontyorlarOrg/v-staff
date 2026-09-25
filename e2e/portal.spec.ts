@@ -1,3 +1,5 @@
+import { crc32, deflateSync } from "node:zlib";
+
 import { expect, test, type Page } from "@playwright/test";
 
 const LOCALES = ["uz", "ru", "en"] as const;
@@ -8,6 +10,32 @@ const TEMPORARY_COORDINATOR = "temporary@example.org";
 const ADMINISTRATOR = "administrator@example.org";
 const VOLUNTEER = "dilnoza@example.org";
 const PASSWORD = "stub-password";
+
+function png(width: number, height: number): Buffer {
+  const chunk = (type: string, data: Buffer) => {
+    const length = Buffer.alloc(4);
+    length.writeUInt32BE(data.length);
+    const body = Buffer.concat([Buffer.from(type, "latin1"), data]);
+    const checksum = Buffer.alloc(4);
+    checksum.writeUInt32BE(crc32(body));
+    return Buffer.concat([length, body, checksum]);
+  };
+  const header = Buffer.alloc(13);
+  header.writeUInt32BE(width, 0);
+  header.writeUInt32BE(height, 4);
+  header.writeUInt8(8, 8);
+  const rows = Buffer.alloc((width + 1) * height, 0x9c);
+  for (let row = 0; row < height; row += 1) rows[row * (width + 1)] = 0;
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk("IHDR", header),
+    chunk("IDAT", deflateSync(rows)),
+    chunk("IEND", Buffer.alloc(0)),
+  ]);
+}
+
+const PHOTO = { name: "vacancy.png", mimeType: "image/png", buffer: png(640, 360) };
+const TINY_PHOTO = { name: "tiny.png", mimeType: "image/png", buffer: png(1, 1) };
 
 const STUB = `http://127.0.0.1:${process.env.E2E_STUB_PORT ?? 3603}`;
 
@@ -422,18 +450,14 @@ test.describe("the vacancy approval workflow", () => {
     await page.getByRole("button", { name: "Save changes" }).click();
 
     await expect(page.getByLabel("Title")).toHaveValue("Revised photo archive week");
-    await expect(page.getByLabel("Applications close")).toHaveValue(
-      "2099-11-05T18:00",
-    );
+    await expect(page.getByLabel("Applications close")).toHaveValue("2099-11-05T18:00");
     await expect(fieldError(page)).toContainText(
       "deadline must fall before the vacancy starts",
     );
 
     await page.getByRole("button", { name: "Save changes" }).click();
     await expect(page.getByLabel("Title")).toHaveValue("Revised photo archive week");
-    await expect(page.getByLabel("Applications close")).toHaveValue(
-      "2099-11-05T18:00",
-    );
+    await expect(page.getByLabel("Applications close")).toHaveValue("2099-11-05T18:00");
   });
 
   test("returns a published coordinator edit to approval without losing details", async ({
@@ -461,20 +485,99 @@ test.describe("the vacancy approval workflow", () => {
     await signedIn(page);
     await page.goto("/en/vacancies/00000000-0000-4000-8000-000000000401");
 
-    await page.getByLabel("Choose a photo").setInputFiles({
-      name: "vacancy.png",
-      mimeType: "image/png",
-      buffer: Buffer.from(
-        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/fscAAAAASUVORK5CYII=",
-        "base64",
-      ),
-    });
-    await page.getByRole("button", { name: "Upload photo" }).click();
+    await page.getByRole("link", { name: "Edit vacancy" }).click();
+    await page.getByLabel("Choose a photo").setInputFiles(PHOTO);
+    await page.getByRole("button", { name: "Save changes" }).click();
 
-    await expect(page.getByText("The photo was saved.")).toBeVisible();
+    await expect(page).toHaveURL(
+      /\/en\/vacancies\/00000000-0000-4000-8000-000000000401$/,
+    );
+    await expect(page.getByRole("heading", { name: "Vacancy photo" })).toBeVisible();
     await expect(page.getByText("Draft", { exact: true }).first()).toBeVisible();
-    await expect(page.getByRole("button", { name: "Remove photo" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Send for approval" })).toBeVisible();
+
+    await page.getByRole("link", { name: "Edit vacancy" }).click();
+    await page.getByRole("button", { name: "Remove photo" }).click();
+    await expect(page.getByRole("button", { name: "Keep photo" })).toBeVisible();
+    await page.getByRole("button", { name: "Save changes" }).click();
+    await expect(page).toHaveURL(
+      /\/en\/vacancies\/00000000-0000-4000-8000-000000000401$/,
+    );
+    await expect(page.getByRole("heading", { name: "Vacancy photo" })).toHaveCount(0);
+  });
+
+  test("creates a draft with its photo in one form", async ({ page }) => {
+    await signedIn(page);
+    await page.goto("/en/vacancies/new");
+    await fillDraft(page, "Photo-ready reading corner", "Chilonzor Reading Corners");
+    await page.getByLabel("Choose a photo").setInputFiles(PHOTO);
+    await page.getByRole("button", { name: "Create the draft" }).click();
+
+    await expect(page.getByRole("heading", { level: 1 })).toContainText(
+      "Photo-ready reading corner",
+    );
+    await expect(page.getByRole("heading", { name: "Vacancy photo" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Send for approval" })).toBeVisible();
+  });
+
+  test("keeps the chosen photo when a failed save has to be corrected", async ({
+    page,
+  }) => {
+    await signedIn(page);
+    await page.goto("/en/vacancies/new");
+    await fillDraft(
+      page,
+      "Photo kept through a correction",
+      "Chilonzor Reading Corners",
+    );
+    await page.getByLabel("Title").fill("");
+    await page.getByLabel("Choose a photo").setInputFiles(PHOTO);
+    await page.getByRole("button", { name: "Create the draft" }).click();
+    await expect(page.getByLabel("Title")).toHaveAttribute("aria-invalid", "true");
+    await expect(page.getByLabel("Choose a photo")).toHaveJSProperty("files.length", 1);
+
+    await page.getByLabel("Title").fill("Photo kept through a correction");
+    await page.getByRole("button", { name: "Create the draft" }).click();
+    await expect(page.getByRole("heading", { level: 1 })).toContainText(
+      "Photo kept through a correction",
+    );
+    await expect(page.getByRole("heading", { name: "Vacancy photo" })).toBeVisible();
+  });
+
+  test("refuses a photo below 640 × 360 before anything is saved", async ({ page }) => {
+    await signedIn(page);
+    await page.goto("/en/vacancies/new");
+    await page.getByLabel("Choose a photo").setInputFiles(TINY_PHOTO);
+    await expect(fieldError(page)).toContainText("at least 640 × 360 pixels");
+    await expect(page.getByLabel("Choose a photo")).toHaveJSProperty("files.length", 0);
+    await expect(page.getByText("No photo yet")).toBeVisible();
+  });
+
+  test("keeps a created draft editable if its photo upload fails", async ({ page }) => {
+    await signedIn(page);
+    await page.request.post(`${STUB}/__stub/break`, {
+      data: {
+        path: "/staff/opportunities/*/image",
+        status: 503,
+        code: "opportunityImageStorageUnavailable",
+      },
+    });
+    await page.goto("/en/vacancies/new");
+    await fillDraft(page, "Reading corner photo retry", "Chilonzor Reading Corners");
+    await page.getByLabel("Choose a photo").setInputFiles(PHOTO);
+    await page.getByRole("button", { name: "Create the draft" }).click();
+
+    await expect(page).toHaveURL(/\/en\/vacancies\/[^/]+\/edit\?photo=failed$/);
+    await expect(formMessage(page)).toContainText(
+      "The draft was created, but its photo was not saved",
+    );
+    await expect(page.getByLabel("Title")).toHaveValue("Reading corner photo retry");
+
+    await page.request.post(`${STUB}/__stub/break`, { data: {} });
+    await page.getByLabel("Choose a photo").setInputFiles(PHOTO);
+    await page.getByRole("button", { name: "Save changes" }).click();
+    await expect(page).toHaveURL(/\/en\/vacancies\/[^/]+$/);
+    await expect(page.getByRole("heading", { name: "Vacancy photo" })).toBeVisible();
   });
 
   test("archives an approved vacancy and closes what nobody decided", async ({
