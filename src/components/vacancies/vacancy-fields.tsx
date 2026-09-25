@@ -7,12 +7,7 @@ import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui
 import { Input } from "@/components/ui/input";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
-import { requiresVenue } from "@/lib/vacancies/approval";
-import {
-  ACCEPTANCE_MODES,
-  type AcceptanceMode,
-  type VacancyFormat,
-} from "@/lib/domain/vocabulary";
+import { ACCEPTANCE_MODES, type AcceptanceMode } from "@/lib/domain/vocabulary";
 import type { MessageCatalog } from "@/lib/forms/messages";
 
 export type VacancyFieldLabels = {
@@ -28,8 +23,16 @@ export type VacancyFieldLabels = {
     when: string;
     volunteers: string;
   };
+  sectionHelp: {
+    about: string;
+    organization: string;
+    place: string;
+    when: string;
+    volunteers: string;
+  };
   unverified: string;
   unverifiedNotice: string;
+  choose: string;
   errors: MessageCatalog;
 };
 
@@ -41,12 +44,31 @@ export type VacancyOrganization = {
 
 export type VacancyFieldDefaults = Record<string, string>;
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  id,
+  title,
+  help,
+  children,
+}: {
+  id: string;
+  title: string;
+  help: string;
+  children: React.ReactNode;
+}) {
   return (
-    <fieldset className="flex flex-col gap-4">
-      <legend className="eyebrow mb-1 text-ink-muted">{title}</legend>
-      {children}
-    </fieldset>
+    <section
+      role="group"
+      aria-labelledby={id}
+      className="grid gap-4 border-t border-border px-5 py-6 first:border-t-0 lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-10"
+    >
+      <div className="min-w-0">
+        <h2 id={id} className="text-section text-ink">
+          {title}
+        </h2>
+        <p className="mt-1 text-sm leading-relaxed text-ink-muted">{help}</p>
+      </div>
+      <div className="flex min-w-0 flex-col gap-4">{children}</div>
+    </section>
   );
 }
 
@@ -68,11 +90,9 @@ export function VacancyFields({
   idPrefix?: string;
 }) {
   const [organizationId, setOrganizationId] = useState(defaults.organizationId ?? "");
-  const [format, setFormat] = useState(defaults.format ?? "");
 
   const idOf = (name: string) => `${idPrefix}-${name}`;
   const selected = organizations.find((item) => item.id === organizationId);
-  const venue = requiresVenue(format as VacancyFormat);
 
   const describedBy = (name: string, invalid: string | undefined) =>
     [
@@ -142,14 +162,21 @@ export function VacancyFields({
   };
 
   return (
-    <div className="flex flex-col gap-7">
-      <Section title={labels.sections.about}>
+    <div className="flex flex-col">
+      <Section
+        id={idOf("about")}
+        title={labels.sections.about}
+        help={labels.sectionHelp.about}
+      >
         {text("title", { required: true })}
-        {text("slug", { required: true })}
         {area("description", true)}
       </Section>
 
-      <Section title={labels.sections.organization}>
+      <Section
+        id={idOf("organization-section")}
+        title={labels.sections.organization}
+        help={labels.sectionHelp.organization}
+      >
         <Field invalid={Boolean(error("organizationId"))}>
           <FieldLabel htmlFor={idOf("organizationId")}>
             {labels.fields.organizationId}
@@ -163,7 +190,9 @@ export function VacancyFields({
             aria-invalid={Boolean(error("organizationId")) || undefined}
             aria-describedby={describedBy("organizationId", error("organizationId"))}
           >
-            <option value="" disabled />
+            <option value="" disabled>
+              {labels.choose}
+            </option>
             {organizations.map((organization) => (
               <NativeSelectOption key={organization.id} value={organization.id}>
                 {organization.verified
@@ -188,7 +217,11 @@ export function VacancyFields({
         ) : null}
       </Section>
 
-      <Section title={labels.sections.place}>
+      <Section
+        id={idOf("place")}
+        title={labels.sections.place}
+        help={labels.sectionHelp.place}
+      >
         <div className="grid gap-4 sm:grid-cols-2">
           <Field invalid={Boolean(error("region"))}>
             <FieldLabel htmlFor={idOf("region")}>{labels.fields.region}</FieldLabel>
@@ -200,6 +233,9 @@ export function VacancyFields({
               aria-invalid={Boolean(error("region")) || undefined}
               aria-describedby={describedBy("region", error("region"))}
             >
+              <NativeSelectOption value="" disabled>
+                {labels.choose}
+              </NativeSelectOption>
               {regions.map((region) => (
                 <NativeSelectOption key={region} value={region}>
                   {labels.regions[region] ?? region}
@@ -215,8 +251,7 @@ export function VacancyFields({
               id={idOf("format")}
               name="format"
               required
-              value={format}
-              onChange={(event) => setFormat(event.target.value)}
+              defaultValue={defaults.format ?? ""}
               aria-invalid={Boolean(error("format")) || undefined}
               aria-describedby={describedBy("format", error("format"))}
             >
@@ -229,25 +264,32 @@ export function VacancyFields({
             <FieldError id={`${idOf("format")}-error`}>{error("format")}</FieldError>
           </Field>
 
-          {text("city", { required: venue })}
-          {text("locationName", { required: true })}
+          {text("city")}
         </div>
+        {text("locationName")}
       </Section>
 
-      <Section title={labels.sections.when}>
+      <Section
+        id={idOf("when")}
+        title={labels.sections.when}
+        help={labels.sectionHelp.when}
+      >
         <div className="grid gap-4 sm:grid-cols-2">
           {text("startsAt", { type: "datetime-local", required: true })}
-          {text("endsAt", { type: "datetime-local", required: true })}
+          {text("endsAt", { type: "datetime-local" })}
           {text("applicationDeadline", { type: "datetime-local", required: true })}
         </div>
       </Section>
 
-      <Section title={labels.sections.volunteers}>
+      <Section
+        id={idOf("volunteers")}
+        title={labels.sections.volunteers}
+        help={labels.sectionHelp.volunteers}
+      >
         <div className="grid gap-4 sm:grid-cols-2">
-          {text("capacity", { type: "number", required: true, min: 1, step: 1 })}
+          {text("capacity", { type: "number", min: 1, step: 1 })}
           {text("estimatedTotalHours", {
             type: "number",
-            required: true,
             min: 0.25,
             max: 100_000,
             step: 0.01,
@@ -293,6 +335,22 @@ export function VacancyFields({
             {error("acceptanceMode")}
           </FieldError>
         </fieldset>
+        <label className="flex min-h-11 items-start gap-3 rounded-lg border border-border bg-surface px-4 py-3">
+          <input
+            type="checkbox"
+            name="essayRequired"
+            defaultChecked={defaults.essayRequired === "on"}
+            className="mt-0.5 size-5 shrink-0 accent-action"
+          />
+          <span className="min-w-0">
+            <span className="block text-sm font-semibold text-ink">
+              {labels.fields.essayRequired}
+            </span>
+            <span className="mt-0.5 block text-xs leading-5 text-ink-muted">
+              {labels.help.essayRequired}
+            </span>
+          </span>
+        </label>
         {area("requirements")}
       </Section>
     </div>
