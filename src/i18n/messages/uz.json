@@ -169,6 +169,11 @@
     "opportunityCannotBeSubmitted": "Bu vakansiyani joriy holatida tasdiqlashga yuborib boʻlmaydi.",
     "opportunityNotPendingApproval": "Bu vakansiya tasdiqlash qarorini kutmayapti.",
     "opportunityNotEditable": "Vakansiya joriy tasdiqlash holatida tahrirlash uchun yopiq.",
+    "opportunityImageInvalid": "Yaroqli rasm faylini tanlang.",
+    "opportunityImageTooLarge": "2 MB dan kichik rasm tanlang.",
+    "opportunityImageFormatUnsupported": "JPEG, PNG yoki WebP formatidagi rasmni tanlang.",
+    "opportunityImageTooSmall": "Kamida 640 × 360 pikselli rasm tanlang.",
+    "opportunityImageStorageUnavailable": "Rasmlar xotirasi hozircha mavjud emas. Keyinroq urinib koʻring.",
     "approvalNoteRequired": "Qarorni tushuntiruvchi izoh yozing.",
     "deadlinePassed": "Ariza topshirish muddati allaqachon tugagan.",
     "duplicateAttendanceApplication": "Har bir koʻngilli ishtirok yangilanishida faqat bir marta koʻrsatilishi mumkin.",
@@ -253,7 +258,7 @@
       "acceptanceModeHelp": "Har qanday holatda qabul qilingan koʻngillini uning arizasi sahifasida rad etish mumkin.",
       "acceptanceModes": {
         "manual": "Har bir arizani siz koʻrib chiqasiz va qabul qilasiz yoki rad etasiz.",
-        "automatic": "Ariza bergan har bir kishi darhol qabul qilinadi — boʻsh joylar tugaguncha."
+        "automatic": "Ariza berganlar darhol qabul qilinadi. Joylar soni faqat chegarani belgilasangiz hisobga olinadi."
       },
       "locationNameHelp": "Ixtiyoriy. Joy nomi yoki onlayn ishning ochiq tavsifi. Uchrashuv parolini yozmang.",
       "cityHelp": "Ixtiyoriy. Volontyorlar boradigan shahar yoki tuman.",
@@ -264,7 +269,7 @@
     },
     "form": {
       "createTitle": "Yangi vakansiya",
-      "createDescription": "Yangi vakansiya qoralama sifatida boshlanadi. Uni koʻngillilar koʻrishidan oldin administrator tasdiqlaydi.",
+      "createDescription": "Yangi vakansiya qoralama sifatida yaratiladi. Yaratgach, uni ochib rasm qoʻshing va tasdiqlashga yuboring.",
       "editTitle": "Vakansiyani tahrirlash",
       "submitCreate": "Qoralamani yaratish",
       "submitUpdate": "Oʻzgarishlarni saqlash",
@@ -290,7 +295,21 @@
         "place": "Volontyorlar qayerga boradi yoki onlayn qanday qatnashadi.",
         "when": "Arizalar boshlanishdan oldin yopiladi. Davomat tadbir tugagach ochiladi.",
         "volunteers": "Oʻrinlar, soatlar va arizalar qanday qabul qilinishi."
-      }
+      },
+      "editDescription": "Eʼlon qilingan vakansiya oʻzgartirilsa, uni qayta tasdiqlashga yubormaguningizcha u koʻngillilardan yashiriladi."
+    },
+    "image": {
+      "title": "Vakansiya rasmi",
+      "description": "Rasm koʻngillilar uchun vakansiya kartasi va tafsilotlarida koʻrinadi. JPEG, PNG yoki WebP, 2 MB gacha.",
+      "choose": "Rasm tanlash",
+      "upload": "Rasm yuklash",
+      "replace": "Rasmni almashtirish",
+      "remove": "Rasmni olib tashlash",
+      "pending": "Saqlanmoqda…",
+      "saved": "Rasm saqlandi.",
+      "removed": "Rasm olib tashlandi.",
+      "noImage": "Hozircha rasm yoʻq",
+      "reviewNotice": "Eʼlon qilingan vakansiya oʻzgartirilsa, administrator qayta tasdiqlamaguncha u koʻngillilarga koʻrinmaydi."
     },
     "archive": {
       "trigger": "Arxivga",
@@ -309,6 +328,8 @@
       "prompt": "Hozir administratorga yuborilsinmi?"
     },
     "approval": {
+      "met": "Tayyor",
+      "unmet": "Hali kerak",
       "title": "Tasdiqlash",
       "submitted": "Tasdiqlashga yuborilgan",
       "decided": "Qaror qabul qilingan",

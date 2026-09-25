@@ -286,6 +286,31 @@ test.describe("the vacancy approval workflow", () => {
     await page.getByLabel("Applications close").fill("2026-10-20T18:00");
   }
 
+  test("saves a short draft and sends it for review without optional logistics", async ({
+    page,
+  }) => {
+    await signedIn(page);
+    await page.goto("/en/vacancies/new");
+    await page.getByLabel("Title").fill("Neighborhood reading help");
+    await page.getByLabel("Description").fill("Help children choose books.");
+    await page
+      .getByRole("combobox", { name: "Organization" })
+      .selectOption({ label: "Chilonzor Reading Corners" });
+    await page.getByRole("combobox", { name: "Region" }).selectOption("tashkent-city");
+    await page.getByRole("combobox", { name: "Format" }).selectOption("onsite");
+    await page.getByLabel("Starts").fill("2099-11-01T09:00");
+    await page.getByLabel("Applications close").fill("2099-10-20T18:00");
+    await page.getByRole("button", { name: "Create the draft" }).click();
+
+    await expect(page.getByRole("heading", { level: 1 })).toContainText(
+      "Neighborhood reading help",
+    );
+    const send = decision(page, "Neighborhood reading help");
+    await send.getByRole("button", { name: "Send for approval" }).click();
+    await send.getByRole("button", { name: "Send", exact: true }).click();
+    await expect(page.getByText("Waiting for approval").first()).toBeVisible();
+  });
+
   test("creates a draft, sends it for approval, and is locked out until a decision", async ({
     page,
   }) => {
@@ -385,6 +410,73 @@ test.describe("the vacancy approval workflow", () => {
     await expect(page.getByText("Waiting for approval").first()).toBeVisible();
   });
 
+  test("keeps an edited vacancy intact after repeated invalid saves", async ({
+    page,
+  }) => {
+    await signedIn(page);
+    await page.goto(`/en/vacancies/${RETURNED}`);
+
+    await page.getByRole("link", { name: "Edit vacancy" }).click();
+    await page.getByLabel("Title").fill("Revised photo archive week");
+    await page.getByLabel("Applications close").fill("2099-11-05T18:00");
+    await page.getByRole("button", { name: "Save changes" }).click();
+
+    await expect(page.getByLabel("Title")).toHaveValue("Revised photo archive week");
+    await expect(page.getByLabel("Applications close")).toHaveValue(
+      "2099-11-05T18:00",
+    );
+    await expect(fieldError(page)).toContainText(
+      "deadline must fall before the vacancy starts",
+    );
+
+    await page.getByRole("button", { name: "Save changes" }).click();
+    await expect(page.getByLabel("Title")).toHaveValue("Revised photo archive week");
+    await expect(page.getByLabel("Applications close")).toHaveValue(
+      "2099-11-05T18:00",
+    );
+  });
+
+  test("returns a published coordinator edit to approval without losing details", async ({
+    page,
+  }) => {
+    await signedIn(page);
+    await page.goto("/en/vacancies/00000000-0000-4000-8000-000000000401");
+
+    await page.getByRole("link", { name: "Edit vacancy" }).click();
+    await page.getByLabel("Title").fill("Winter book drive, revised");
+    await page.getByLabel("Starts").fill("2099-11-01T09:00");
+    await page.getByLabel("Ends").fill("2099-11-01T15:00");
+    await page.getByLabel("Applications close").fill("2099-10-20T18:00");
+    await page.getByRole("button", { name: "Save changes" }).click();
+
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("revised");
+    await expect(page.getByText("Draft", { exact: true }).first()).toBeVisible();
+    const send = decision(page, "Winter book drive, revised");
+    await send.getByRole("button", { name: "Send for approval" }).click();
+    await send.getByRole("button", { name: "Send", exact: true }).click();
+    await expect(page.getByText("Waiting for approval").first()).toBeVisible();
+  });
+
+  test("sends a published photo change back through approval", async ({ page }) => {
+    await signedIn(page);
+    await page.goto("/en/vacancies/00000000-0000-4000-8000-000000000401");
+
+    await page.getByLabel("Choose a photo").setInputFiles({
+      name: "vacancy.png",
+      mimeType: "image/png",
+      buffer: Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/fscAAAAASUVORK5CYII=",
+        "base64",
+      ),
+    });
+    await page.getByRole("button", { name: "Upload photo" }).click();
+
+    await expect(page.getByText("The photo was saved.")).toBeVisible();
+    await expect(page.getByText("Draft", { exact: true }).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: "Remove photo" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Send for approval" })).toBeVisible();
+  });
+
   test("archives an approved vacancy and closes what nobody decided", async ({
     page,
   }) => {
@@ -412,6 +504,10 @@ test.describe("the vacancy approval workflow", () => {
 
     await expect(fieldError(page)).toContainText(
       "deadline must fall before the vacancy starts",
+    );
+    await expect(page.getByLabel("Title")).toHaveValue("Late deadline");
+    await expect(page.getByLabel("Place", { exact: true })).toHaveValue(
+      "Chilonzor library",
     );
   });
 
