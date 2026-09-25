@@ -2,12 +2,9 @@ import "server-only";
 
 import { getTranslations } from "next-intl/server";
 
-import type { VacancyDialogLabels } from "@/components/vacancies/vacancy-dialog";
 import type { VacancyFieldLabels } from "@/components/vacancies/vacancy-fields";
 import type { VacancyFormLabels } from "@/components/vacancies/vacancy-form";
-import type { VacancyWorkflowLabels } from "@/components/vacancies/vacancy-workflow";
 import { REGIONS, VACANCY_FORMATS } from "@/lib/domain/vocabulary";
-import { APPROVAL_REQUIREMENTS } from "@/lib/vacancies/approval";
 
 const ERROR_CODES = [
   "server",
@@ -42,10 +39,17 @@ const ERROR_CODES = [
   "decisionNoteRequired",
   "opportunityIncomplete",
   "opportunityCannotBeSubmitted",
+  "opportunityCannotBePublished",
   "opportunityNotPendingApproval",
   "opportunityNotEditable",
+  "opportunityImageInvalid",
+  "opportunityImageTooLarge",
+  "opportunityImageFormatUnsupported",
+  "opportunityImageTooSmall",
+  "opportunityImageStorageUnavailable",
   "approvalNoteRequired",
   "deadlinePassed",
+  "invalidOpportunityDates",
 ] as const;
 
 export async function errorCatalog(
@@ -62,7 +66,6 @@ async function vacancyFieldLabels(): Promise<VacancyFieldLabels> {
   return {
     fields: {
       title: t("fields.title"),
-      slug: t("fields.slug"),
       description: t("fields.description"),
       organizationId: t("fields.organization"),
       region: t("fields.region"),
@@ -75,17 +78,18 @@ async function vacancyFieldLabels(): Promise<VacancyFieldLabels> {
       capacity: t("fields.capacity"),
       estimatedTotalHours: t("fields.estimatedTotalHours"),
       acceptanceMode: t("fields.acceptanceMode"),
+      essayRequired: t("fields.essayRequired"),
       requirements: t("fields.requirements"),
     },
     help: {
-      slug: t("fields.slugHelp"),
       organizationId: t("fields.organizationHelp"),
       capacity: t("fields.capacityHelp"),
       estimatedTotalHours: t("fields.estimatedTotalHoursHelp"),
-      locationName: t("fields.locationNameHelp"),
       city: t("fields.cityHelp"),
+      locationName: t("fields.locationNameHelp"),
       requirements: t("fields.requirementsHelp"),
       acceptanceMode: t("fields.acceptanceModeHelp"),
+      essayRequired: t("fields.essayRequiredHelp"),
     },
     sections: {
       about: t("form.sections.about"),
@@ -94,8 +98,16 @@ async function vacancyFieldLabels(): Promise<VacancyFieldLabels> {
       when: t("form.sections.when"),
       volunteers: t("form.sections.volunteers"),
     },
+    sectionHelp: {
+      about: t("form.sectionHelp.about"),
+      organization: t("form.sectionHelp.organization"),
+      place: t("form.sectionHelp.place"),
+      when: t("form.sectionHelp.when"),
+      volunteers: t("form.sectionHelp.volunteers"),
+    },
     unverified: t("form.unverified"),
     unverifiedNotice: t("form.unverifiedNotice"),
+    choose: t("form.choose"),
     regions: Object.fromEntries(
       REGIONS.map((region) => [region, vocabulary(`regions.${region}`)]),
     ),
@@ -129,80 +141,8 @@ export async function vacancyFormLabels(
     submit,
     pending,
     success,
-    summary: common("fixFields"),
-    fallbackError: errors("server"),
-  };
-}
-
-export async function vacancyDialogLabels(
-  mode: "create" | "edit",
-): Promise<VacancyDialogLabels> {
-  const t = await getTranslations("vacancies");
-  const common = await getTranslations("common");
-  const errors = await getTranslations("errors");
-
-  const creating = mode === "create";
-
-  return {
-    ...(await vacancyFieldLabels()),
-    title: creating ? t("form.createTitle") : t("form.editTitle"),
-    description: creating ? t("form.createDescription") : t("form.editDescription"),
-    submit: creating ? t("form.submitCreate") : t("form.submitUpdate"),
-    pending: t("form.pending"),
-    success: creating ? t("form.created") : t("form.updated"),
     cancel: common("cancel"),
-    close: common("close"),
     summary: common("fixFields"),
     fallbackError: errors("server"),
-    errors: await errorCatalog(),
-  };
-}
-
-export async function vacancyWorkflowLabels(): Promise<VacancyWorkflowLabels> {
-  const t = await getTranslations("vacancies");
-  const common = await getTranslations("common");
-  const errors = await getTranslations("errors");
-
-  const catalog = await errorCatalog();
-  const shared = {
-    cancel: common("cancel"),
-    close: common("close"),
-    summary: common("fixFields"),
-    fallbackError: errors("server"),
-    errors: catalog,
-  };
-
-  return {
-    submit: {
-      ...shared,
-      trigger: t("submit.trigger"),
-      title: t("submit.title"),
-      description: t("submit.description"),
-      submit: t("submit.confirm"),
-      pending: t("submit.pending"),
-      success: t("submit.success"),
-    },
-    archive: {
-      ...shared,
-      trigger: t("archive.trigger"),
-      title: t("archive.title"),
-      description: t("archive.description"),
-      submit: t("archive.confirm"),
-      pending: t("archive.pending"),
-      success: t("archive.success"),
-    },
-    readinessTitle: t("approval.readyTitle"),
-    readinessBlocked: t("approval.readyBlocked"),
-    readyLine: t("approval.readyLine"),
-    readiness: {
-      met: t("approval.met"),
-      unmet: t("approval.unmet"),
-      requirements: Object.fromEntries(
-        APPROVAL_REQUIREMENTS.map((requirement) => [
-          requirement,
-          t(`approval.requirements.${requirement}`),
-        ]),
-      ),
-    },
   };
 }

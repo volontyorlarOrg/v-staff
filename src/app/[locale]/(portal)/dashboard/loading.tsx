@@ -1,8 +1,8 @@
 import { getTranslations } from "next-intl/server";
 
-import { FigureSkeleton } from "@/components/states/skeletons";
+import { QueueSkeleton } from "@/components/states/skeletons";
 
-export default async function DashboardLoading() {
+export default async function TodayLoading() {
   const t = await getTranslations("states.loading");
-  return <FigureSkeleton label={t("figures")} count={8} />;
+  return <QueueSkeleton label={t("queue")} />;
 }

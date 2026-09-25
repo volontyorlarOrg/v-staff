@@ -8,7 +8,7 @@ import {
   ResolveAttendanceForm,
   type ResolveLabels,
 } from "@/components/attendance/resolve-form";
-import { StatusBadge, attendanceTone } from "@/components/portal/status-badge";
+import { StatusBadge, attendanceStatus } from "@/components/portal/status-badge";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
@@ -159,7 +159,8 @@ export function AttendanceRoster({
                 <TableCell className="block pt-0 pb-2 pl-3 sm:table-cell sm:py-3 sm:pl-5">
                   <StatusBadge
                     label={row.outcomeLabel}
-                    tone={attendanceTone(row.outcome)}
+                    tone={attendanceStatus(row.outcome).tone}
+                    icon={attendanceStatus(row.outcome).icon}
                   />
                   {row.detail ? (
                     <span className="tabular mt-0.5 block text-xs text-ink-muted">
