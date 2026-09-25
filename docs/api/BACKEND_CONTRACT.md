@@ -123,9 +123,23 @@ The coordinator sends a vacancy for approval through
 `POST /staff/opportunities/{id}/submit-for-approval`. The portal only offers
 that control when `missingForApproval` is empty; the backend checks the same
 list again and answers `opportunityIncomplete`, `organizationNotVerified`,
-`deadlinePassed` or `invalidOpportunityDates` when it disagrees. Editing is
-refused outside `draft` and `changes_requested` (`opportunityNotEditable`), so
-a vacancy under review is locked and a rejected one is read-only for good.
+`deadlinePassed` or `invalidOpportunityDates` when it disagrees. A vacancy
+under review is locked to coordinators, and a rejected one remains read-only.
+
+The form keeps entered values when validation or the API rejects a save. It
+generates a stable URL slug from the title when creating a draft, rather than
+asking the coordinator for an address. End time, city, place, capacity, hours,
+and requirements can be added later; clearing one in an edit sends an explicit
+empty value instead of silently keeping the old detail. Publication still
+requires the verified organization, title, description, start, and future
+application deadline checked by the backend.
+
+The vacancy detail screen can upload, replace, or remove a photo after the
+draft exists. Its multipart `image` field uses `PUT /staff/opportunities/{id}/image`;
+`DELETE` on the same route removes it. The existing `imageUrl` read field is the
+display URL. Editing an approved vacancy moves it back to draft and hides it
+from volunteers until administrator approval. Existing applications remain
+available; new draft submissions are blocked while it is hidden.
 
 ## How a vacancy accepts applications
 

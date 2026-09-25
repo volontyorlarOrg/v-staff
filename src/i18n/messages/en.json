@@ -162,6 +162,11 @@
     "opportunityCannotBeSubmitted": "This vacancy cannot be sent for approval in its current state.",
     "opportunityNotPendingApproval": "This vacancy is not waiting for an approval decision.",
     "opportunityNotEditable": "This vacancy is locked in its current approval state.",
+    "opportunityImageInvalid": "Choose a valid image file.",
+    "opportunityImageTooLarge": "Choose an image under 2 MB.",
+    "opportunityImageFormatUnsupported": "Choose a JPEG, PNG or WebP image.",
+    "opportunityImageTooSmall": "Choose an image at least 640 × 360 pixels.",
+    "opportunityImageStorageUnavailable": "Image storage is unavailable. Try again later.",
     "approvalNoteRequired": "Write a note explaining the decision.",
     "deadlinePassed": "The application deadline has already passed.",
     "duplicateAttendanceApplication": "Each volunteer can appear only once in an attendance update.",
@@ -253,23 +258,23 @@
       "endsAt": "Ends",
       "applicationDeadline": "Applications close",
       "capacity": "Places",
-      "capacityHelp": "How many volunteers this vacancy needs. At least one.",
+      "capacityHelp": "Optional. Leave blank when there is no fixed limit.",
       "requirements": "Requirements",
       "requirementsHelp": "One requirement per line.",
       "estimatedTotalHours": "Estimated hours",
-      "estimatedTotalHoursHelp": "Hours a volunteer earns for the whole event.",
+      "estimatedTotalHoursHelp": "Optional. Hours a volunteer is expected to earn for the whole event.",
       "acceptanceMode": "Approving applications",
       "acceptanceModeHelp": "Either way, you can still reject an accepted volunteer from their application.",
       "acceptanceModes": {
         "manual": "You review each application and accept or reject it.",
-        "automatic": "Everyone who applies is accepted at once, until the places run out."
+        "automatic": "Everyone who applies is accepted at once. A place limit applies only if you set one."
       },
-      "locationNameHelp": "The venue on site, or a public description of where the work happens online. Never a meeting password.",
-      "cityHelp": "Required when volunteers turn up in person."
+      "locationNameHelp": "Optional. The venue or a public description of where the work happens online. Never a meeting password.",
+      "cityHelp": "Optional. Add the city for in-person work."
     },
     "form": {
       "createTitle": "New vacancy",
-      "createDescription": "A new vacancy starts as a draft. An administrator approves it before any volunteer sees it.",
+      "createDescription": "A new vacancy starts as a draft. Open it after creation to add a photo before sending it for approval.",
       "editTitle": "Edit vacancy",
       "submitCreate": "Create the draft",
       "submitUpdate": "Save changes",
@@ -286,7 +291,20 @@
       },
       "unverified": "not verified",
       "unverifiedNotice": "This organization is not verified yet. A vacancy under it cannot be approved until an administrator verifies it.",
-      "editDescription": "Changes stay a draft until you send the vacancy for approval again."
+      "editDescription": "Saving changes to a published vacancy hides it until you send it for approval again."
+    },
+    "image": {
+      "title": "Vacancy photo",
+      "description": "The photo appears on the volunteer vacancy card and detail page. JPEG, PNG or WebP, up to 2 MB.",
+      "choose": "Choose a photo",
+      "upload": "Upload photo",
+      "replace": "Replace photo",
+      "remove": "Remove photo",
+      "pending": "Saving…",
+      "saved": "The photo was saved.",
+      "removed": "The photo was removed.",
+      "noImage": "No photo yet",
+      "reviewNotice": "Changing a published vacancy hides it from volunteers until an administrator approves it again."
     },
     "archive": {
       "trigger": "Archive",
@@ -306,6 +324,8 @@
       "success": "The vacancy was sent for approval."
     },
     "approval": {
+      "met": "Done",
+      "unmet": "Still needed",
       "title": "Approval",
       "description": "An administrator decides whether this vacancy reaches volunteers.",
       "submitted": "Sent for approval",

@@ -256,14 +256,8 @@ test.describe("a coordinator only sees their own work", () => {
 });
 
 test.describe("the vacancy approval workflow", () => {
-  async function fillDraft(
-    page: Page | Locator,
-    title: string,
-    slug: string,
-    organization: string,
-  ) {
+  async function fillDraft(page: Page | Locator, title: string, organization: string) {
     await page.getByLabel("Title").fill(title);
-    await page.getByLabel("Address").fill(slug);
     await page.getByLabel("Description").fill(`${title} description`);
     await page.getByLabel("Organization").selectOption({ label: organization });
     await page.getByLabel("City", { exact: true }).fill("Tashkent");
@@ -275,6 +269,28 @@ test.describe("the vacancy approval workflow", () => {
     await page.getByLabel("Applications close").fill("2026-10-20T18:00");
   }
 
+  test("saves a short draft and sends it for review without optional logistics", async ({
+    page,
+  }) => {
+    await signedIn(page);
+    await page.goto("/en/vacancies/new");
+    await page.getByLabel("Title").fill("Neighborhood reading help");
+    await page.getByLabel("Description").fill("Help children choose books.");
+    await page
+      .getByLabel("Organization")
+      .selectOption({ label: "Chilonzor Reading Corners" });
+    await page.getByLabel("Starts").fill("2099-11-01T09:00");
+    await page.getByLabel("Applications close").fill("2099-10-20T18:00");
+    await page.getByRole("button", { name: "Create the draft" }).click();
+
+    await expect(formMessage(page)).toContainText("draft was created");
+    await page.goto("/en/vacancies?q=Neighborhood");
+    await page.getByRole("link", { name: "Open" }).first().click();
+    await openDialog(page, "Send for approval");
+    await dialog(page).getByRole("button", { name: "Send", exact: true }).click();
+    await expect(page.getByText("Waiting for approval").first()).toBeVisible();
+  });
+
   test("creates a draft in a dialog, sends it for approval, and is locked out until a decision", async ({
     page,
   }) => {
@@ -282,12 +298,7 @@ test.describe("the vacancy approval workflow", () => {
     await page.goto("/en/vacancies");
 
     await openDialog(page, "New vacancy");
-    await fillDraft(
-      dialog(page),
-      "Library shelving day",
-      "library-shelving-day",
-      "Chilonzor Reading Corners",
-    );
+    await fillDraft(dialog(page), "Library shelving day", "Chilonzor Reading Corners");
     await expect(dialog(page).getByRole("radio", { name: /^Manually/ })).toBeChecked();
     await dialog(page)
       .getByRole("radio", { name: /^Automatically/ })
@@ -330,7 +341,6 @@ test.describe("the vacancy approval workflow", () => {
     await fillDraft(
       dialog(page),
       "Riverbank clean-up",
-      "riverbank-clean-up",
       "Green Corridor Group — not verified",
     );
     await expect(dialog(page)).toContainText("not verified yet");
@@ -387,6 +397,57 @@ test.describe("the vacancy approval workflow", () => {
     await expect(page.getByText("Waiting for approval").first()).toBeVisible();
   });
 
+  test("keeps an edited vacancy intact when saving finds an invalid deadline", async ({
+    page,
+  }) => {
+    await signedIn(page);
+    await page.goto("/en/vacancies/00000000-0000-4000-8000-000000000404");
+
+    await openDialog(page, "Edit vacancy");
+    await dialog(page).getByLabel("Title").fill("Revised photo archive week");
+    await dialog(page).getByLabel("Applications close").fill("2099-11-05T18:00");
+    await dialog(page).getByRole("button", { name: "Save changes" }).click();
+
+    await expect(dialog(page).getByLabel("Title")).toHaveValue(
+      "Revised photo archive week",
+    );
+    await expect(dialog(page).getByLabel("Applications close")).toHaveValue(
+      "2099-11-05T18:00",
+    );
+    await expect(dialog(page).locator('[data-slot="field-error"]')).toContainText(
+      "deadline must fall before the vacancy starts",
+    );
+
+    await dialog(page).getByRole("button", { name: "Save changes" }).click();
+    await expect(dialog(page).getByLabel("Title")).toHaveValue(
+      "Revised photo archive week",
+    );
+    await expect(dialog(page).getByLabel("Applications close")).toHaveValue(
+      "2099-11-05T18:00",
+    );
+  });
+
+  test("returns a published coordinator edit to approval without losing its details", async ({
+    page,
+  }) => {
+    await signedIn(page);
+    await page.goto("/en/vacancies/00000000-0000-4000-8000-000000000401");
+
+    await openDialog(page, "Edit vacancy");
+    await dialog(page).getByLabel("Title").fill("Winter book drive, revised");
+    await dialog(page).getByLabel("Starts").fill("2099-11-01T09:00");
+    await dialog(page).getByLabel("Ends").fill("2099-11-01T15:00");
+    await dialog(page).getByLabel("Applications close").fill("2099-10-20T18:00");
+    await dialog(page).getByRole("button", { name: "Save changes" }).click();
+
+    await expect(dialog(page)).toHaveCount(0);
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("revised");
+    await expect(page.getByText("Draft", { exact: true }).first()).toBeVisible();
+    await openDialog(page, "Send for approval");
+    await dialog(page).getByRole("button", { name: "Send", exact: true }).click();
+    await expect(page.getByText("Waiting for approval").first()).toBeVisible();
+  });
+
   test("archives an approved vacancy", async ({ page }) => {
     await signedIn(page);
     await page.goto("/en/vacancies/00000000-0000-4000-8000-000000000401");
@@ -400,17 +461,16 @@ test.describe("the vacancy approval workflow", () => {
     await signedIn(page);
     await page.goto("/en/vacancies/new");
 
-    await fillDraft(
-      page,
-      "Late deadline",
-      "late-deadline",
-      "Chilonzor Reading Corners",
-    );
+    await fillDraft(page, "Late deadline", "Chilonzor Reading Corners");
     await page.getByLabel("Applications close").fill("2026-11-05T18:00");
     await page.getByRole("button", { name: "Create the draft" }).click();
 
     await expect(fieldError(page)).toContainText(
       "deadline must fall before the vacancy starts",
+    );
+    await expect(page.getByLabel("Title")).toHaveValue("Late deadline");
+    await expect(page.getByLabel("Place", { exact: true })).toHaveValue(
+      "Chilonzor library",
     );
   });
 
@@ -420,7 +480,7 @@ test.describe("the vacancy approval workflow", () => {
     await signedIn(page);
     await page.goto("/en/vacancies/new");
 
-    await fillDraft(page, "Remote help", "remote-help", "Chilonzor Reading Corners");
+    await fillDraft(page, "Remote help", "Chilonzor Reading Corners");
     await page.getByLabel("Format").selectOption("remote");
     await page.getByLabel("Place", { exact: true }).fill("Zoom, passcode 4821");
     await page.getByRole("button", { name: "Create the draft" }).click();

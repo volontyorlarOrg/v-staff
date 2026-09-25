@@ -1,14 +1,12 @@
 import { z } from "zod";
 
 import { ACCEPTANCE_MODES, REGIONS, VACANCY_FORMATS } from "@/lib/domain/vocabulary";
-import { hasMeetingCredentials, requiresVenue } from "@/lib/vacancies/approval";
+import { hasMeetingCredentials } from "@/lib/vacancies/approval";
 
-export const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 export const MAX_ESTIMATED_TOTAL_HOURS = 100_000;
 
 export const VACANCY_FIELDS = [
   "title",
-  "slug",
   "description",
   "organizationId",
   "region",
@@ -39,7 +37,6 @@ function withEveryField(value: unknown) {
 const vacancyShape = z
   .object({
     title: trimmed.min(2, "required").max(180, "tooLong"),
-    slug: trimmed.min(2, "required").max(160, "tooLong").regex(SLUG_PATTERN, "slug"),
     description: trimmed.min(2, "required").max(10_000, "tooLong"),
     organizationId: trimmed.min(1, "required"),
     region: z.enum(REGIONS, { message: "required" }),
@@ -47,17 +44,17 @@ const vacancyShape = z
     city: trimmed.max(100, "tooLong").optional(),
     locationName: trimmed.max(200, "tooLong").optional(),
     startsAt: trimmed.min(1, "required"),
-    endsAt: trimmed.min(1, "required"),
+    endsAt: trimmed.optional(),
     applicationDeadline: trimmed.min(1, "required"),
-    capacity: trimmed.min(1, "required"),
-    estimatedTotalHours: trimmed.min(1, "required"),
+    capacity: trimmed.optional(),
+    estimatedTotalHours: trimmed.optional(),
     acceptanceMode: z.enum(ACCEPTANCE_MODES, { message: "required" }),
     requirements: trimmed.optional(),
   })
   .superRefine((values, context) => {
     const starts = Date.parse(values.startsAt);
     const deadline = Date.parse(values.applicationDeadline);
-    const ends = Date.parse(values.endsAt);
+    const ends = values.endsAt ? Date.parse(values.endsAt) : Number.NaN;
 
     if (Number.isNaN(starts)) {
       context.addIssue({ code: "custom", path: ["startsAt"], message: "date" });
@@ -103,30 +100,7 @@ const vacancyShape = z
       });
     }
 
-    if (requiresVenue(values.format)) {
-      if (!values.city) {
-        context.addIssue({ code: "custom", path: ["city"], message: "cityRequired" });
-      }
-      if (!values.locationName) {
-        context.addIssue({
-          code: "custom",
-          path: ["locationName"],
-          message: "venueRequired",
-        });
-      }
-      return;
-    }
-
-    if (!values.locationName) {
-      context.addIssue({
-        code: "custom",
-        path: ["locationName"],
-        message: "onlineLocationRequired",
-      });
-      return;
-    }
-
-    if (hasMeetingCredentials(values.locationName)) {
+    if (values.locationName && hasMeetingCredentials(values.locationName)) {
       context.addIssue({
         code: "custom",
         path: ["locationName"],
@@ -144,7 +118,7 @@ export function vacancyFromFormData(formData: FormData): Record<string, string> 
 
   for (const field of VACANCY_FIELDS) {
     const value = formData.get(field);
-    if (typeof value === "string" && value.trim() !== "") output[field] = value;
+    output[field] = typeof value === "string" ? value : "";
   }
 
   return output;
@@ -153,16 +127,17 @@ export function vacancyFromFormData(formData: FormData): Record<string, string> 
 export function toVacancyPayload(values: VacancyFormValues) {
   return {
     title: values.title,
-    slug: values.slug,
     description: values.description,
     organizationId: values.organizationId,
     region: values.region,
     format: values.format,
     startsAt: new Date(values.startsAt).toISOString(),
-    endsAt: new Date(values.endsAt).toISOString(),
+    ...(values.endsAt ? { endsAt: new Date(values.endsAt).toISOString() } : {}),
     applicationDeadline: new Date(values.applicationDeadline).toISOString(),
-    capacity: Number(values.capacity),
-    estimatedTotalHours: Number(values.estimatedTotalHours),
+    ...(values.capacity ? { capacity: Number(values.capacity) } : {}),
+    ...(values.estimatedTotalHours
+      ? { estimatedTotalHours: Number(values.estimatedTotalHours) }
+      : {}),
     acceptanceMode: values.acceptanceMode,
     ...(values.city ? { city: values.city } : {}),
     ...(values.locationName ? { locationName: values.locationName } : {}),
@@ -174,6 +149,25 @@ export function toVacancyPayload(values: VacancyFormValues) {
             .filter(Boolean),
         }
       : {}),
+  };
+}
+
+export function toVacancyUpdatePayload(values: VacancyFormValues) {
+  return {
+    ...toVacancyPayload(values),
+    endsAt: values.endsAt ? new Date(values.endsAt).toISOString() : null,
+    city: values.city || null,
+    locationName: values.locationName || null,
+    capacity: values.capacity ? Number(values.capacity) : null,
+    estimatedTotalHours: values.estimatedTotalHours
+      ? Number(values.estimatedTotalHours)
+      : null,
+    requirements: values.requirements
+      ? values.requirements
+          .split("\n")
+          .map((line) => line.trim())
+          .filter(Boolean)
+      : [],
   };
 }
 
