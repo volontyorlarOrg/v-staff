@@ -827,7 +827,8 @@
       "user_password_replaced": "Temporary password assigned",
       "user_username_changed": "Username changed",
       "user_avatar_updated": "Photo updated",
-      "user_avatar_removed": "Photo removed"
+      "user_avatar_removed": "Photo removed",
+      "user_progress_adjusted": "XP and hours adjusted"
     },
     "you": "You"
   }
