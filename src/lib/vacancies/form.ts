@@ -3,7 +3,6 @@ import { z } from "zod";
 import { ACCEPTANCE_MODES, REGIONS, VACANCY_FORMATS } from "@/lib/domain/vocabulary";
 import { hasMeetingCredentials } from "@/lib/vacancies/approval";
 
-export const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 export const MAX_ESTIMATED_TOTAL_HOURS = 100_000;
 
 export const VACANCY_FIELDS = [
@@ -121,7 +120,7 @@ export function vacancyFromFormData(formData: FormData): Record<string, string> 
 
   for (const field of VACANCY_FIELDS) {
     const value = formData.get(field);
-    if (typeof value === "string" && value.trim() !== "") output[field] = value;
+    output[field] = typeof value === "string" ? value : "";
   }
 
   return output;

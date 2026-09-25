@@ -31,7 +31,7 @@ export function isPermanentlyRejected(vacancy: ApprovalSubject): boolean {
 
 export function canEditVacancy(vacancy: ApprovalSubject): boolean {
   const state = vacancyStateOf(vacancy);
-  return state === "draft" || state === "changes_requested";
+  return state === "draft" || state === "changes_requested" || state === "approved";
 }
 
 export function canSubmitForApproval(vacancy: ApprovalSubject): boolean {
@@ -73,13 +73,8 @@ export type ApprovalCandidate = {
   description: string;
   format: VacancyFormat;
   region: string;
-  city?: string | undefined;
-  locationName?: string | undefined;
   startsAt: string;
-  endsAt?: string | undefined;
   applicationDeadline: string;
-  capacity?: number | undefined;
-  estimatedTotalHours?: number | undefined;
   organization?: { verified: boolean } | undefined;
 };
 
