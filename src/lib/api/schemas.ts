@@ -96,6 +96,7 @@ export const vacancySchema = z.object({
   capacity: optional(z.number().int()),
   estimatedTotalHours: decimal,
   acceptanceMode: z.enum(ACCEPTANCE_MODES).default("manual"),
+  essayRequired: z.boolean().default(false),
   approvalStatus: optional(z.enum(OPPORTUNITY_APPROVAL_STATUSES)),
   approvalSubmittedAt: optional(isoDate),
   approvalReviewedAt: optional(isoDate),
@@ -124,6 +125,7 @@ export const attendanceSchema = z.object({
   scheduledHours: decimal,
   confirmedHours: decimal,
   resolvedAt: optional(isoDate),
+  confirmedById: optional(id),
   applicationId: optional(id),
   volunteerId: optional(id),
   opportunityId: optional(id),
@@ -145,6 +147,7 @@ export const applicationOpportunitySchema = z.object({
   capacity: optional(z.number().int()),
   estimatedTotalHours: decimal,
   acceptanceMode: optional(z.enum(ACCEPTANCE_MODES)),
+  essayRequired: z.boolean().default(false),
 });
 
 export type ApplicationOpportunity = z.infer<typeof applicationOpportunitySchema>;
@@ -165,20 +168,34 @@ export const applicationAnswerSchema = z.object({
 });
 
 export const profileSnapshotSchema = z.object({
+  username: optional(z.string()),
   fullName: optional(z.string()),
   bio: optional(z.string()),
   region: optional(z.string()),
+  city: optional(z.string()),
   school: optional(z.string()),
+  gradeYear: optional(z.string()),
   languages: optional(z.array(z.string())),
   phone: optional(z.string()),
   telegram: optional(z.string()),
+  instagram: optional(z.string()),
+  linkedin: optional(z.string()),
+  links: optional(z.array(z.string())),
 });
 
 export type ProfileSnapshot = z.infer<typeof profileSnapshotSchema>;
 
+export const profileCompletionSchema = z.object({
+  complete: z.boolean(),
+  missing: z.array(z.string()).default([]),
+});
+
+export type ProfileCompletion = z.infer<typeof profileCompletionSchema>;
+
 export const applicationSchema = z.object({
   id,
   status: z.enum(APPLICATION_STATUSES),
+  essay: optional(z.string()),
   reviewerNote: optional(z.string()),
   profileSnapshot: optional(profileSnapshotSchema),
   submittedAt: optional(isoDate),
@@ -193,7 +210,10 @@ export const applicationSchema = z.object({
     z.object({
       id,
       displayName: optional(z.string()),
+      username: optional(z.string()),
+      avatarUrl: optional(z.string()),
       profile: optional(profileSnapshotSchema.loose()),
+      profileCompletion: optional(profileCompletionSchema),
     }),
   ),
   opportunity: optional(applicationOpportunitySchema),
@@ -238,11 +258,14 @@ export type DirectoryUser = z.infer<typeof directoryUserSchema>;
 export const userDetailSchema = z.object({
   id,
   displayName: optional(z.string()),
+  username: optional(z.string()),
+  avatarUrl: optional(z.string()),
   email: optional(z.string()),
   emailVerifiedAt: optional(isoDate),
   isActive: z.boolean().default(true),
   createdAt: isoDate,
   profile: optional(profileSnapshotSchema.loose()),
+  profileCompletion: optional(profileCompletionSchema),
   passwordCredential: optional(passwordStateSchema),
   applications: z.array(applicationSchema).default([]).transform(sentOnly),
 });
@@ -280,10 +303,13 @@ export const statisticsSchema = z.object({
   totals: z.object({
     vacancies: z.number().int().default(0),
     publishedVacancies: z.number().int().default(0),
+    pendingApproval: z.number().int().default(0),
+    changesRequested: z.number().int().default(0),
     applications: z.number().int().default(0),
     pendingReview: z.number().int().default(0),
     accepted: z.number().int().default(0),
     awaitingAttendance: z.number().int().default(0),
+    attendanceDue: z.number().int().default(0),
     attended: z.number().int().default(0),
     confirmedHours: z.number().default(0),
     volunteers: optional(z.number().int()),
