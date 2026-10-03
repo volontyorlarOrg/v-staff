@@ -164,8 +164,8 @@ decides, and nothing makes them open a record just to act on it.
 
 **Key Characteristics:**
 
-- A navy rail on the left, no top bar; the account, language, theme and sign-out
-  live at the rail's foot.
+- A navy rail on the left, no top bar; My activity, Change password, language,
+  theme and sign-out live at the rail's foot.
 - One register sheet per concern, divided by hairlines, never boxes in boxes.
 - Decisions are pill buttons in the row; confirmations and notes open inline.
 - Source Serif 4 for the one page title and for figures; Onest for everything
@@ -272,8 +272,8 @@ A fixed navy rail of 16.5rem on the left from the large breakpoint; below it the
 rail becomes a drawer behind a menu button in a white header, and the content
 takes the width. The rail holds the stacked inverse lockup, the sections in
 hairline-separated groups (work, people) with waiting counts on Vacancies
-(returned for changes), Applications and Attendance, and at its foot the identity card, My
-activity, Change password, language and theme, and Sign out.
+(returned for changes), Applications and Attendance, and at its foot My
+activity, Change password, language, theme, and Sign out.
 
 The content column is capped at 80rem with 16px side padding on phones, 24px on
 small screens and 40px on the desk, 24px between blocks. A screen is a page
