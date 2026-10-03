@@ -544,6 +544,7 @@
       "attended": "Keldi",
       "excused": "Sababli",
       "cancelled": "Bekor qilindi",
+      "no_show": "Sababsiz kelmadi",
       "awaiting_confirmation": "Tasdiq kutilmoqda",
       "unknown": "API bu maydonni eʼlon qilmagan"
     },
