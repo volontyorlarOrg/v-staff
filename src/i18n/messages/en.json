@@ -544,6 +544,7 @@
       "attended": "Attended",
       "excused": "Excused",
       "cancelled": "Cancelled",
+      "no_show": "Unexcused no-show",
       "awaiting_confirmation": "Awaiting confirmation",
       "unknown": "Not published by the API"
     },
