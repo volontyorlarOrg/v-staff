@@ -843,5 +843,9 @@
       "user_progress_adjusted": "XP and hours adjusted"
     },
     "you": "You"
+  },
+  "policy": {
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Use"
   }
 }

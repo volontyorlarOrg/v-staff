@@ -843,5 +843,9 @@
       "user_progress_adjusted": "XP va soatlar oʻzgartirildi"
     },
     "you": "Siz"
+  },
+  "policy": {
+    "privacy": "Maxfiylik siyosati",
+    "terms": "Foydalanish shartlari"
   }
 }
