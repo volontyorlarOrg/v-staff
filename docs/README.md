@@ -37,3 +37,10 @@ Unknowns stay explicit. They are not filled with an assumed contract, hostname
 or claim. The endpoint registry is the same discipline applied to the API: an
 operation this portal calls is marked `published`, `announced` or `requested`,
 and a test keeps those labels honest.
+
+## Personal data and legal notices
+
+The sign-in page links to the Privacy Policy and Terms on the marketing site
+when `NEXT_PUBLIC_MARKETING_URL` is set; while it is blank the links are hidden.
+Coordinators see applicant data only for the opportunities they run. See
+[consent and data-request operations](../../v-backend/docs/operations/DATA_RIGHTS_AND_CONSENT.md).
