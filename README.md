@@ -61,9 +61,6 @@ waiting for rather than showing anything invented.
 
 ## Where to read next
 
-| You want                                 | Go to                                                 |
-| ---------------------------------------- | ----------------------------------------------------- |
-| What the product is, and who this serves | [`PRODUCT.md`](PRODUCT.md)                            |
-| How to work in this repository           | [`AGENTS.md`](AGENTS.md)                              |
-| The design system as applied             | [`DESIGN.md`](DESIGN.md)                              |
-| Everything else                          | [`docs/README.md`](docs/README.md) — a context router |
+| You want                       | Go to                    |
+| ------------------------------ | ------------------------ |
+| How to work in this repository | [`AGENTS.md`](AGENTS.md) |

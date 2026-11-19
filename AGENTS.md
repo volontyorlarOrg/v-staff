@@ -2,16 +2,14 @@
 
 This repository is the private portal a **coordinator** signs into: they create
 the volunteering that students apply to, decide who is accepted, and confirm who
-turned up. Read this file before meaningful work, then use
-[`docs/README.md`](docs/README.md) to load only what the task needs.
+turned up. Read this file before meaningful work.
 
 It follows the codebase patterns of the volunteer application in `../v-app` —
 the same tokens and typeface, the same route registry, the same server-only API
 client and Zod-parsed responses, the same `ActionResult` envelope, the same
 documentation layout and verification loop. It does not carry its history, its
 volunteer routes, or its whiteboard ground; its own ground is the country
-terrain in [`docs/architecture/GROUND.md`](docs/architecture/GROUND.md). See
-[`DESIGN.md`](DESIGN.md).
+terrain.
 
 ## The one thing to know first
 
@@ -27,8 +25,7 @@ otherwise.** So:
   endpoint without a status, and do not mark one `published` to quiet a test;
 - **an unpublished route that answers `404` with no error code renders
   "waiting for the API", naming the method and path.** A `404` _with_ a code is
-  a missing or unauthorised record. See
-  [`.agent-memory/uncoded-404-means-no-route.md`](.agent-memory/uncoded-404-means-no-route.md);
+  a missing or unauthorised record;
 - **test data exists only in tests:** `e2e/stub-backend.mjs` supplies the
   deterministic browser-test contract. Runtime development always uses
   `v-backend`; never fabricate a successful sign-in, a record, or a count;
@@ -52,9 +49,7 @@ lockfiles, cookies and secrets. What makes each one its portal is declared in
 three files: `src/lib/portal.ts`, `src/lib/api/endpoints.ts` and
 `src/lib/routing/routes.ts`. Beyond those, a file differs only where the work
 differs — Today, the vacancy list and record, the volunteer record, activity,
-the vacancy actions, the audit subject links and the catalogs — and
-[`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md) lists
-them. Everything else, `src/components/` and the stylesheet included, is
+the vacancy actions, the audit subject links and the catalogs. Everything else, `src/components/` and the stylesheet included, is
 byte-identical. Keep it that way — a fix that belongs to both belongs in the
 shared shape, applied to both.
 
@@ -98,8 +93,6 @@ src/app/[locale]/(portal)/      dashboard (Today), vacancies[/new|/id|/id/edit],
 src/components/                 ui · portal chrome · states · forms · domain forms
 src/i18n/                       routing, navigation, request config, catalogs
 e2e/                            Playwright suite and the stub backend
-docs/                           stable documentation
-.agent-memory/                  durable decisions and gotchas
 ```
 
 ## Critical rules
@@ -127,18 +120,15 @@ docs/                           stable documentation
   ICU argument parity. Client components receive labels as props — the root
   layout passes `messages={null}`.
 - **A `"use server"` file may export only async functions.** Schemas live beside
-  their actions. See
-  [`.agent-memory/use-server-exports.md`](.agent-memory/use-server-exports.md).
+  their actions.
 - **Backend data is never re-shaped in JSX.** Parse once with a schema; render
   the schema's output or a state panel.
 - **Decide in the row.** A decision about one record is an `InlineDecision`,
   on the queue row and on the record's page; a long form is a page of its own;
-  `FormDialog` is only for what needs protected focus, such as archiving. See
-  [`docs/operations/EXTENDING.md`](docs/operations/EXTENDING.md).
+  `FormDialog` is only for what needs protected focus, such as archiving.
 - **Every list ships loading, empty, no-matches and failure; every write ships
   pending, error and success.** A success message must survive the revalidation
-  that follows it — see
-  [`.agent-memory/resolved-attendance-stays.md`](.agent-memory/resolved-attendance-stays.md).
+  that follows it.
 - **Filters are a GET form and pagination is links**, so both work without
   JavaScript and can be shared. Read query state only through
   `src/lib/routing/search-params.ts`, which accepts only listed values.
@@ -146,11 +136,10 @@ docs/                           stable documentation
   confirmations. Semantic tokens only, never a literal hex.
 - Preserve keyboard access, visible focus, one `h1` per page, reduced motion and
   responsive behaviour.
-- Update `/docs` when stable environment or architecture behaviour changes.
 
 ## Code conventions
 
-- **Source files carry no comments.** Explanations go in `/docs`. Names, types
+- **Source files carry no comments.** Names, types
   and test names carry intent. Compiler and linter directives are not comments.
 - Server Components by default; `"use client"` only for an event handler, client
   state or a browser API, with the boundary as low as practical.
@@ -173,9 +162,6 @@ Add `npm run build` for build or deployment work, and `npm run test:e2e` when
 routing, permissions or the information architecture change. For UI work also
 inspect the affected screens at both widths, in both themes, and with reduced
 motion.
-
-To add a section, an endpoint, copy, a form or a state, follow
-[`docs/operations/EXTENDING.md`](docs/operations/EXTENDING.md).
 
 <!-- BEGIN:nextjs-agent-rules -->
 
